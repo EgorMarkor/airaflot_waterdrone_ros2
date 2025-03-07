@@ -14,8 +14,7 @@ from ...mavros_helpers.service_client import ServiceClientHelper
 
 from ...const_names import (
     RUN_WATER_SAMPLER_SERVICE_NAME,
-    CLOSE_SERVO_SERVICE_NAME,
-    OPEN_AND_STOP_SERVO_SERVICE_NAME,
+    TRIGGER_RELE_SERVICE_NAME,
     DOWN_WATER_SAMPLER_MOTOR_SERVICE_NAME,
     UP_WATER_SAMPLER_MOTOR_SERVICE_NAME,
     SET_LOITER_MODE_SERVICE_NAME,
@@ -34,12 +33,12 @@ class WaterSamplerNode(Node):
 
         ### Service Clients ###
 
-        self.close_servo_service_client = ServiceClientHelper(
-            self, Trigger, CLOSE_SERVO_SERVICE_NAME
+        self.trigger_servo_service_client = ServiceClientHelper(
+            self, Trigger, TRIGGER_RELE_SERVICE_NAME
         )
-        self.open_servo_service_client = ServiceClientHelper(
-            self, Trigger, OPEN_AND_STOP_SERVO_SERVICE_NAME
-        )
+        # self.open_servo_service_client = ServiceClientHelper(
+        #     self, Trigger, OPEN_RELE_SERVICE_NAME
+        # )
         self.down_motor_service_client = ServiceClientHelper(
             self, WaterSamplerMotor, DOWN_WATER_SAMPLER_MOTOR_SERVICE_NAME
         )
@@ -65,7 +64,7 @@ class WaterSamplerNode(Node):
         ### Other Setup ###
 
         # self._run_service(self.close_servo_service_client, Trigger.Request())
-        self.close_servo_service_client.call(Trigger.Request())
+        # self.close_servo_service_client.call(Trigger.Request())
         self.get_logger().info("Water sampler is ready")
 
     def run_water_sampler(self, request: WaterSampler.Request, response: WaterSampler.Response):
@@ -77,7 +76,7 @@ class WaterSamplerNode(Node):
             self.down_motor_service_client.call_from_callback(motor_request)
             self.get_logger().info(f"Wait for delay: {GET_SAMPLE_DELAY}")
             time.sleep(GET_SAMPLE_DELAY)
-            self.open_servo_service_client.call_from_callback(Trigger.Request())
+            self.trigger_servo_service_client.call_from_callback(Trigger.Request())
             self.up_motor_service_client.call_from_callback(motor_request)
             self.get_logger().info("Water sampler service finished")
             response.success = True

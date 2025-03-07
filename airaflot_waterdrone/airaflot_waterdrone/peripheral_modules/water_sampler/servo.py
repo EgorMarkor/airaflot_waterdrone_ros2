@@ -3,38 +3,42 @@ import time
 
 from rclpy.node import Node
 import RPi.GPIO as GPIO
+import pymodbus.client as ModbusClient
 
 from std_srvs.srv import Trigger
 
-from ..config_wiring import WATER_SAMPLER_SERVO_PIN
-from ...const_names import CLOSE_SERVO_SERVICE_NAME, OPEN_AND_STOP_SERVO_SERVICE_NAME
+from ..config_wiring import WATER_SAMPLER_RELE_PORT
+from ...const_names import TRIGGER_RELE_SERVICE_NAME
 
-NODE_NAME = "water_sampler_servo"
+NODE_NAME = "water_sampler_rele"
 
 CLOSE_POSITION = 10
 OPEN_POSITION = 6
-OPEN_SERVO_DELAY = 0.5
+OPEN_RELE_DELAY = 1
 
 
-class WaterSamplerServoNode(Node):
+class WaterSamplerReleNode(Node):
     def __init__(self):
         super().__init__(NODE_NAME)
-        self.rate = self.create_rate(OPEN_SERVO_DELAY)
-        self.pwm = self._setup_gpio()
+        # self.rate = self.create_rate(OPEN_RELE_DELAY)
+        # self.pwm = self._setup_gpio()
+        self.modbus_client = ModbusClient.ModbusSerialClient(
+                WATER_SAMPLER_RELE_PORT, baudrate=9600, bytesize=8, stopbits=1
+            )
         self.service = self.create_service(
-            Trigger, CLOSE_SERVO_SERVICE_NAME, self.close_servo
+            Trigger, TRIGGER_RELE_SERVICE_NAME, self.trigger_rele
         )
-        self.service = self.create_service(
-            Trigger, OPEN_AND_STOP_SERVO_SERVICE_NAME, self.open_and_stop_servo
-        )
+        # self.service = self.create_service(
+        #     Trigger, OPEN_RELE_SERVICE_NAME, self.open_rele
+        # )
         self.get_logger().info("Water Sampler Servo is ready")
 
-    def open_and_stop_servo(self, request: Trigger.Request, response: Trigger.Response):
-        self.get_logger().info("Start open servo")
+    def trigger_rele(self, request: Trigger.Request, response: Trigger.Response):
+        self.get_logger().info("Start trigger rele")
         try:
-            self.pwm.start(OPEN_POSITION)
-            time.sleep(0.5)
-            self.pwm.stop()
+            self.modbus_client.write_register(112,1,1)
+            time.sleep(OPEN_RELE_DELAY)
+            self.modbus_client.write_register(112,0,1)
             response.success = True
             response.message = "ok"
         except Exception as e:
@@ -43,30 +47,12 @@ class WaterSamplerServoNode(Node):
             response.message = f"Open servo service failed with error {e}"
         finally:
             return response
-
-    def close_servo(self, request: Trigger.Request, response: Trigger.Response):
-        self.get_logger().info("Start close servo")
-        try:
-            self.pwm.start(CLOSE_POSITION)
-            response.success = True
-            response.message = "ok"
-        except Exception as e:
-            self.get_logger().error(f"Open servo service failed with error {e}")
-            response.success = False
-            response.message = f"Open servo service failed with error {e}"
-        finally:
-            return response
-
-    def _setup_gpio(self) -> GPIO.PWM:
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setup(WATER_SAMPLER_SERVO_PIN, GPIO.OUT)
-        return GPIO.PWM(WATER_SAMPLER_SERVO_PIN, 50)
 
 
 def main():
     try:
         rclpy.init()
-        minimal_service = WaterSamplerServoNode()
+        minimal_service = WaterSamplerReleNode()
         rclpy.spin(minimal_service)
     except (KeyboardInterrupt, ExternalShutdownException):
         pass

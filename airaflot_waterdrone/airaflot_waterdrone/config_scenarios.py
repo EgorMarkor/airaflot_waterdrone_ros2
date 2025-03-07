@@ -22,6 +22,6 @@
 USE_FILE_SAVER_WITH_IPFS = True    # Send the batch of data in datalog using IPFS (True) 
                                    # or create datalog on every new message in /airaflot/data_to_send (False)
 
-EMULATE_ECOSTAB_SENSORS = True     # Use emulator instead of real sensors for testing
+EMULATE_ECOSTAB_SENSORS = False     # Use emulator instead of real sensors for testing
 
 NEW_DATA_INTERVAL = 5              # secons, How often to send data to /airaflot/data_to_send in ecostab_to_robonomisc node

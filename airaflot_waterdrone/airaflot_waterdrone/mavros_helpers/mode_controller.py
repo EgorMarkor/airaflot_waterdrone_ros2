@@ -7,6 +7,7 @@ from rclpy.node import Node, Client
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 
+from airaflot_msgs.srv import WaterSampler, WaterSamplerMotor
 from mavros_msgs.srv import SetMode
 from mavros_msgs.msg import State
 from std_srvs.srv import Trigger
