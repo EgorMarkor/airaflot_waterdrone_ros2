@@ -28,3 +28,4 @@ FILE_FINISHED_TOPIC_NAME = "/airaflot/file_saver/file_finished"
 
 ### Scenarios Service ###
 DATA_TO_SEND_TOPIC_NAME = "/airaflot/data_to_send"
+SCENARIO_STATE_TOPIC_NAME = "/airaflot/scenario_state"

@@ -29,6 +29,7 @@ set(msg_files
   "msg/NMEADBT.msg"
   "msg/NMEAGPGGA.msg"
   "msg/DataToSend.msg"
+  "msg/ScenarioStateMsg.msg"
 )
 set(srv_files
   "srv/WaterSampler.srv"

@@ -1,8 +1,10 @@
 import rclpy
-from rclpy.node import Node
 import typing as tp
 import time
 import pymodbus.client as ModbusClient
+
+from rclpy.lifecycle import LifecycleNode, LifecyclePublisher, LifecycleState, TransitionCallbackReturn
+from rclpy.timer import Timer
 
 from airaflot_msgs.msg import EcostabSensors
 
@@ -13,28 +15,70 @@ from ..config import EMULATE_ECOSTAB_SENSORS
 
 NODE_NAME = "ecostab_sensors"
 
-class EcostabSensorsNode(Node):
+class EcostabSensorsNode(LifecycleNode):
 
-    def __init__(self):
-        super().__init__(NODE_NAME)
-        if EMULATE_ECOSTAB_SENSORS:
+    def __init__(self, **kwargs):
+        self.sensors: list = []
+        self.publisher: tp.Optional[LifecyclePublisher] = None
+        self.timer: tp.Optional[Timer] = None
+        self.modbus_client: tp.Optional[ModbusClient.ModbusSerialClient] = None
+        super().__init__(NODE_NAME, **kwargs)
+        self.declare_parameter("emulate_sensors", False)
+
+    def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
+        emulate_sensors = self.get_parameter('emulate_sensors').get_parameter_value().bool_value
+        if emulate_sensors:
             self.sensors: tp.List[Sensor] = [EmulateSensor()]
         else:
-            modbus_client = ModbusClient.ModbusSerialClient(
+            self.modbus_client = ModbusClient.ModbusSerialClient(
                 ECOSTAB_SENSORS_PORT, baudrate=9600, bytesize=8, stopbits=1
             )
-            self.sensors: tp.List[Sensor] = [ConductivitySensor(modbus_client), ORPSensor(modbus_client), OxxygenSensor(modbus_client), pHSensor(modbus_client)]
-        self.publisher_ = self.create_publisher(EcostabSensors, ECOSTAB_SENSORS_TOPIC_NAME, 10)
+            self.sensors: tp.List[Sensor] = [
+                ConductivitySensor(self.modbus_client), 
+                ORPSensor(self.modbus_client), 
+                OxxygenSensor(self.modbus_client), 
+                pHSensor(self.modbus_client)
+            ]
+        try:
+            for sensor in self.sensors:
+                sensor.fetch(EcostabSensors())
+        except Exception as e:
+            self.get_logger().error(f"Exception in configure: {e}")
+            return TransitionCallbackReturn.FAILURE
+        self.publisher = self.create_lifecycle_publisher(EcostabSensors, ECOSTAB_SENSORS_TOPIC_NAME, 10)
         timer_period = 1  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
+        return TransitionCallbackReturn.SUCCESS
+    
+    
+    def on_cleanup(self, state: LifecycleState) -> TransitionCallbackReturn:
+        self.destroy_timer(self.timer)
+        self.destroy_publisher(self.publisher)
+        if self.modbus_client:
+            self.modbus_client.close()
+        self.sensors.clear()
+
+        self.get_logger().info('on_cleanup() is called.')
+        return TransitionCallbackReturn.SUCCESS
+    
+    def on_shutdown(self, state: LifecycleState) -> TransitionCallbackReturn:
+        self.destroy_timer(self.timer)
+        self.destroy_publisher(self.publisher)
+        if self.modbus_client:
+            self.modbus_client.close()
+        self.sensors.clear()
+
+        self.get_logger().info('on_shutdown() is called.')
+        return TransitionCallbackReturn.SUCCESS
 
     def timer_callback(self):
         msg = EcostabSensors()
-        for sensor in self.sensors:
-            msg = sensor.fetch(msg)
-            time.sleep(0.1)
-        self.publisher_.publish(msg)
-        self.get_logger().info(f"Publishing: {msg}")
+        if self.publisher is not None and self.publisher.is_activated:
+            for sensor in self.sensors:
+                msg = sensor.fetch(msg)
+                time.sleep(0.1)
+            self.publisher.publish(msg)
+            self.get_logger().info(f"Publishing: {msg}")
 
 
 def main(args=None):

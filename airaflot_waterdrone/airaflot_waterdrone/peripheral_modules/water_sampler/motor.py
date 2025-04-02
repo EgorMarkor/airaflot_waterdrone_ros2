@@ -4,46 +4,62 @@ from rclpy.node import Node
 import RPi.GPIO as GPIO
 from RpiMotorLib import RpiMotorLib
 import time
+import typing as tp
+import serial
+import serial.tools.list_ports
+from rclpy.lifecycle import LifecycleNode, LifecycleState, TransitionCallbackReturn
 
 from airaflot_msgs.srv import WaterSamplerMotor
 
-from ..config_wiring import (
-    # WATER_SAMPLER_STEP_PIN,
-    # WATER_SAMPLER_DIRECTION_PIN,
-    # WATER_SAMPLER_MODE_PINS,
-    # WATER_SUMPLER_MOTOR_TYPE,
-    WATER_SAMPLER_UP_MOTOR_PIN,
-    WATER_SAMPLER_DOWN_MOTOR_PIN
-)
 from ...const_names import DOWN_WATER_SAMPLER_MOTOR_SERVICE_NAME, UP_WATER_SAMPLER_MOTOR_SERVICE_NAME
 
 NODE_NAME = "water_sampler_motor"
 
 GET_SAMPLE_DELAY = 3 * 60 # sec
 
-class WaterSamplerMotorNode(Node):
+class WaterSamplerMotorNode(LifecycleNode):
     def __init__(self):
         super().__init__(NODE_NAME)
-        self._setup_gpio()
-        # self.motor = RpiMotorLib.A4988Nema(
-        #     WATER_SAMPLER_DIRECTION_PIN,
-        #     WATER_SAMPLER_STEP_PIN,
-        #     WATER_SAMPLER_MODE_PINS,
-        #     motor_type=WATER_SUMPLER_MOTOR_TYPE,
-        # )
-        self.service = self.create_service(
+        self.service_up: tp.Optional[Service] = None
+        self.service_down: tp.Optional[Service] = None
+        self.serial: tp.Optional[serial.Serial] = None
+        self.get_logger().info("Water Sampler Motor is uncofigured")
+
+    def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
+        port = self._find_port()
+        if port is None:
+            self.get_logger().error("Can't find Arduino port for motor")
+            return TransitionCallbackReturn.FAILURE
+        self.get_logger().info(f"Found arduino port {port}")
+        self._setup_serial(port)
+        self.service_up = self.create_service(
             WaterSamplerMotor, DOWN_WATER_SAMPLER_MOTOR_SERVICE_NAME, self.down_motor
         )
-        self.service = self.create_service(
+        self.service_down = self.create_service(
             WaterSamplerMotor, UP_WATER_SAMPLER_MOTOR_SERVICE_NAME, self.up_motor
         )
-        self.get_logger().info("Water Sampler Motor is ready")
+        self.get_logger().info("Water Sampler Motor is cofigured")
+        return TransitionCallbackReturn.SUCCESS
+
+    def on_cleanup(self, state: LifecycleState) -> TransitionCallbackReturn:
+        self.destroy_service(self.service_down)
+        self.destroy_service(self.service_up)
+
+        self.get_logger().info("Water Sampler Motor cleanup")
+        return TransitionCallbackReturn.SUCCESS
+    
+    def on_shutdown(self, state: LifecycleState) -> TransitionCallbackReturn:
+        self.destroy_service(self.service_down)
+        self.destroy_service(self.service_up)
+
+        self.get_logger().info("Water Sampler Motor shutdown")
+        return TransitionCallbackReturn.SUCCESS
 
     def down_motor(self, request, response):
         self.get_logger().info(f"Run water sampler motor down to {request.distance_cm} cm")
         try:
             revolutions = self._get_revolutions(request.distance_cm)
-            self._run_stepper(revolutions, direction_down=True)
+            # self._run_stepper(revolutions, direction_down=True)
             response.success = True
         except Exception as e:
             self.get_logger().error(f"Run motor down service faild with error {e}")
@@ -56,7 +72,7 @@ class WaterSamplerMotorNode(Node):
         self.get_logger().info(f"Run water sampler motor up to {request.distance_cm} cm")
         try:
             revolutions = self._get_revolutions(request.distance_cm)
-            self._run_stepper(revolutions, direction_down=False)
+            # self._run_stepper(revolutions, direction_down=False)
             response.success = True
         except Exception as e:
             self.get_logger().error(f"Run motor up service faild with error {e}")
@@ -65,24 +81,38 @@ class WaterSamplerMotorNode(Node):
             self.get_logger().info("Finished")
             return response
     
-    def _setup_gpio(self) -> None:
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setup(WATER_SAMPLER_UP_MOTOR_PIN, GPIO.OUT, initial=GPIO.LOW)
-        GPIO.setup(WATER_SAMPLER_DOWN_MOTOR_PIN, GPIO.OUT, initial=GPIO.LOW)
-        # GPIO.setup(WATER_SAMPLER_DIRECTION_PIN, GPIO.OUT)
-        # GPIO.setup(WATER_SAMPLER_STEP_PIN, GPIO.OUT)
+    def _setup_serial(self, port: str) -> None:
+        self.serial = serial.Serial(port, baudrate=9600, timeout=1)
 
     def _run_stepper(self, revolutions: float, direction_down: bool) -> None:
         self.get_logger().info(f"Run motor to {revolutions} revolutions {'down' if direction_down else 'up'}")
-        # self.motor.motor_go(clockwise=direction_down, steps=int(revolutions*8000), stepdelay=.00012)
-        pin = WATER_SAMPLER_DOWN_MOTOR_PIN if direction_down else WATER_SAMPLER_UP_MOTOR_PIN
-        GPIO.output(pin, GPIO.HIGH)
-        time.sleep(9)
-        GPIO.output(pin, GPIO.LOW)
+        direction = 1 if direction_down else -1
+        command = f"{revolutions * direction * 40}\n"
+        self.serial.write(command.encode())
+        time.sleep(1)
+        res = self.serial.readline().decode().strip()
+        while res != "DONE":
+            self.get_logger().info(res)
+            res = self.serial.readline().decode().strip()
         self.get_logger().info("Motor finished")
 
     def _get_revolutions(self, distance_cm: int) -> int:
         return distance_cm / 18
+
+    def _find_port(self) -> tp.Optional[str]:
+        ports = serial.tools.list_ports.comports()
+        port_names = [port.device for port in ports]
+        for port in port_names:
+            if "USB" in port:
+                ser = serial.Serial(port, baudrate=9600, timeout=2)
+                time.sleep(2)
+                self.get_logger().info(f"Check port {port}")
+                ser.write(b"CHECK\n")
+                res = ser.readline().decode().strip()
+                ser.close()
+                self.get_logger().info(res)
+                if res == "ARDUINO":
+                    return port
     
 
 

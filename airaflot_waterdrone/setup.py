@@ -23,16 +23,17 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-                'rc_controller = airaflot_waterdrone.scenarios.water_sampler.rc_commands_controller:main',
-                'water_sampler_servo = airaflot_waterdrone.peripheral_modules.water_sampler.servo:main',
+                'water_sampler_scenario = airaflot_waterdrone.scenarios.water_sampler.water_sampler_scenario:main',
+                'water_sampler_rele = airaflot_waterdrone.peripheral_modules.water_sampler.rele:main',
                 'water_sampler_motor = airaflot_waterdrone.peripheral_modules.water_sampler.motor:main',
-                'water_sampler = airaflot_waterdrone.peripheral_modules.water_sampler.water_sampler:main',
+                'water_sampler = airaflot_waterdrone.scenarios.water_sampler.water_sampler:main',
                 'ecostab_sensors_publisher = airaflot_waterdrone.peripheral_modules.ecostab_sensors.publisher:main', 
                 'echo_sounder_publisher = airaflot_waterdrone.peripheral_modules.echo_sounder.echo_sounder:main',
                 'mode_controller_helper = airaflot_waterdrone.mavros_helpers.mode_controller:main',
                 'gps_external = airaflot_waterdrone.peripheral_modules.gps_external.gps_external:main',
                 'file_saver = airaflot_waterdrone.senders.file_saver.file_saver:main',
-                'ecostab_to_robonomisc = airaflot_waterdrone.scenarios.ecostab_to_robonomics.data_formatter:main'
+                'ecostab_to_robonomisc = airaflot_waterdrone.scenarios.ecostab_to_robonomics.data_formatter:main',
+                'state_controller = airaflot_waterdrone.state_controller.state_controller:main'
         ],
-},
+    },
 )

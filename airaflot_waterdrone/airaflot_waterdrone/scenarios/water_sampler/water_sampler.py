@@ -1,13 +1,17 @@
 import rclpy
 import time
+import typing as tp
 from threading import Event
 from rclpy.executors import ExternalShutdownException
-from rclpy.node import Node, Client
+from rclpy.node import Node, Client, Service
+from rclpy.timer import Timer
 
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 
+from airaflot_msgs.msg import ScenarioStateMsg
 from airaflot_msgs.srv import WaterSampler, WaterSamplerMotor
+from rclpy.lifecycle import LifecycleNode, LifecycleState, TransitionCallbackReturn, LifecyclePublisher
 from std_srvs.srv import Trigger
 
 from ...mavros_helpers.service_client import ServiceClientHelper
@@ -19,6 +23,7 @@ from ...const_names import (
     UP_WATER_SAMPLER_MOTOR_SERVICE_NAME,
     SET_LOITER_MODE_SERVICE_NAME,
     SET_PREVIOUS_MODE_SERVICE_NAME,
+    SCENARIO_STATE_TOPIC_NAME,
 )
 
 NODE_NAME = "water_sampler"
@@ -26,19 +31,26 @@ NODE_NAME = "water_sampler"
 GET_SAMPLE_DELAY = 30  # sec
 
 
-class WaterSamplerNode(Node):
+class WaterSamplerNode(LifecycleNode):
     def __init__(self):
         super().__init__(NODE_NAME)
         self.callback_group = ReentrantCallbackGroup()
+        self.service: tp.Optional[Service] = None
+        self.trigger_servo_service_client: tp.Optional[ServiceClientHelper] = None
+        self.down_motor_service_client: tp.Optional[ServiceClientHelper] = None
+        self.up_motor_service_client: tp.Optional[ServiceClientHelper] = None
+        self.set_loiter_mode_client: tp.Optional[ServiceClientHelper] = None
+        self.set_previous_mode_client: tp.Optional[ServiceClientHelper] = None
+        self.state_publisher: tp.Optional[LifecyclePublisher] = None
+        self.timer: tp.Optional[Timer] = None
+        self._state: int = ScenarioStateMsg.WAIT_FOR_COMMAND
 
-        ### Service Clients ###
+        self.get_logger().info("Water sampler is unconfigured")
 
+    def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.trigger_servo_service_client = ServiceClientHelper(
             self, Trigger, TRIGGER_RELE_SERVICE_NAME
         )
-        # self.open_servo_service_client = ServiceClientHelper(
-        #     self, Trigger, OPEN_RELE_SERVICE_NAME
-        # )
         self.down_motor_service_client = ServiceClientHelper(
             self, WaterSamplerMotor, DOWN_WATER_SAMPLER_MOTOR_SERVICE_NAME
         )
@@ -51,8 +63,9 @@ class WaterSamplerNode(Node):
         self.set_previous_mode_client = ServiceClientHelper(
             self, Trigger, SET_PREVIOUS_MODE_SERVICE_NAME
         )
-
-        ### Service Servers ###
+        self.state_publisher = self.create_lifecycle_publisher(ScenarioStateMsg, SCENARIO_STATE_TOPIC_NAME, 10)
+        timer_period = 1  # seconds
+        self.timer = self.create_timer(timer_period, self.timer_callback)
 
         self.service = self.create_service(
             WaterSampler,
@@ -60,15 +73,55 @@ class WaterSamplerNode(Node):
             self.run_water_sampler,
             callback_group=self.callback_group,
         )
+        self.get_logger().info("Water sampler is configured")
+        return TransitionCallbackReturn.SUCCESS
 
-        ### Other Setup ###
+    def on_cleanup(self, state: LifecycleState) -> TransitionCallbackReturn:
+        self.destroy_service(self.service)
+        self.trigger_servo_service_client.destroy()
+        self.down_motor_service_client.destroy()
+        self.up_motor_service_client.destroy()
+        self.set_loiter_mode_client.destroy()
+        self.set_previous_mode_client.destroy()
+        self.destroy_lifecycle_publisher(self.state_publisher)
+        self.destroy_timer(self.timer)
+        self.trigger_servo_service_client = None
+        self.down_motor_service_client = None
+        self.up_motor_service_client = None
+        self.set_loiter_mode_client = None
+        self.set_previous_mode_client = None
 
-        # self._run_service(self.close_servo_service_client, Trigger.Request())
-        # self.close_servo_service_client.call(Trigger.Request())
-        self.get_logger().info("Water sampler is ready")
+        self.get_logger().info('Water Sampler clean up')
+        return TransitionCallbackReturn.SUCCESS
+    
+    def on_shutdown(self, state: LifecycleState) -> TransitionCallbackReturn:
+        self.destroy_service(self.service)
+        self.trigger_servo_service_client.destroy()
+        self.down_motor_service_client.destroy()
+        self.up_motor_service_client.destroy()
+        self.set_loiter_mode_client.destroy()
+        self.set_previous_mode_client.destroy()
+        self.destroy_lifecycle_publisher(self.state_publisher)
+        self.destroy_timer(self.timer)
+        self.trigger_servo_service_client = None
+        self.down_motor_service_client = None
+        self.up_motor_service_client = None
+        self.set_loiter_mode_client = None
+        self.set_previous_mode_client = None
+
+        self.get_logger().info('Water Sampler shutdown')
+        return TransitionCallbackReturn.SUCCESS
+
+    def timer_callback(self) -> None:
+        msg = ScenarioStateMsg()
+        if self.state_publisher is not None and self.state_publisher.is_activated:
+            msg.node_name = NODE_NAME
+            msg.state = self._state
+            self.state_publisher.publish(msg)
 
     def run_water_sampler(self, request: WaterSampler.Request, response: WaterSampler.Response):
         self.get_logger().info(f"Run water sampler with mode: {request.mode}")
+        self._state = ScenarioStateMsg.WORK
         try:
             self.set_loiter_mode_client.call_from_callback(Trigger.Request())
             distance = self._get_distance(request.mode)
@@ -85,6 +138,7 @@ class WaterSamplerNode(Node):
             response.success = False
         finally:
             self.set_previous_mode_client.call_from_callback(Trigger.Request())
+            self._state = ScenarioStateMsg.WAIT_FOR_COMMAND
             return response
 
     def _get_distance(self, mode: int) -> int:
@@ -101,22 +155,6 @@ class WaterSamplerNode(Node):
         request = WaterSamplerMotor.Request()
         request.distance_cm = distance
         return request
-
-    # def _run_service(self, service_client: Client, request):
-    #     future = service_client.call_async(request)
-    #     rclpy.spin_until_future_complete(self, future)
-    #     return future.result()
-
-    # def _run_service_from_callback(self, service_client: Client, request):
-    #     self.service_done_event.clear()
-    #     event = Event()
-    #     def done_callback(future):
-    #         nonlocal event
-    #         event.set()
-    #     future = service_client.call_async(request)
-    #     future.add_done_callback(done_callback)
-    #     event.wait()
-    #     return future.result()
 
 
 

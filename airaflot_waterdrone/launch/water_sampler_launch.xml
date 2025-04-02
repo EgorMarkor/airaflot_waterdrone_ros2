@@ -1,8 +1,0 @@
-<launch>
-    
-    <node pkg="airaflot_waterdrone" exec="rc_controller" name="rc_controller"/>
-    <node pkg="airaflot_waterdrone" exec="water_sampler_servo" name="water_sampler_servo"/>
-    <node pkg="airaflot_waterdrone" exec="water_sampler_motor" name="water_sampler_motor"/>
-    <node pkg="airaflot_waterdrone" exec="water_sampler" name="water_sampler"/>
-    <node pkg="airaflot_waterdrone" exec="mode_controller_helper" name="mode_controller_helper"/>
-</launch> 

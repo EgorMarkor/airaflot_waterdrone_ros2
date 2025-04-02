@@ -16,7 +16,7 @@ from ...const_names import (
 )
 from .config import USE_EXTERNAL_GPS, NEW_DATA_INTERVAL
 
-NODE_NAME = "ecostab_sensors_data_formatter"
+NODE_NAME = "ecostab_to_robonomics_scenario"
 
 GPS_INTERNAL_DATA_TOPIC_NAME = "/mavros/global_position/global"
 

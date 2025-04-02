@@ -2,37 +2,49 @@ import rclpy
 import time
 
 from rclpy.node import Node
-import RPi.GPIO as GPIO
-import pymodbus.client as ModbusClient
+import board
+import neopixel
 
 from std_srvs.srv import Trigger
+from rclpy.executors import ExternalShutdownException
 
-from ..config_wiring import WATER_SAMPLER_RELE_PORT
 from ...const_names import TRIGGER_RELE_SERVICE_NAME
 
-NODE_NAME = "water_sampler_rele"
+NODE_NAME = "led_strip"
 
-CLOSE_POSITION = 10
-OPEN_POSITION = 6
-OPEN_RELE_DELAY = 1
+PIXELS_COUNT = 40
+
+TIMER_PERIOD = 1
 
 
 class WaterSamplerReleNode(Node):
     def __init__(self):
         super().__init__(NODE_NAME)
-        # self.rate = self.create_rate(OPEN_RELE_DELAY)
-        # self.pwm = self._setup_gpio()
-        self.modbus_client = ModbusClient.ModbusSerialClient(
-                WATER_SAMPLER_RELE_PORT, baudrate=9600, bytesize=8, stopbits=1
-            )
+        self.pixels = neopixel.NeoPixel(board.D18, PIXELS_COUNT)
+
+        self.is_blink = True
+        self.main_color = WHITE_COLOR
+        self.secondary_color = ORANGE_COLOR
+
         self.service = self.create_service(
             Trigger, TRIGGER_RELE_SERVICE_NAME, self.trigger_rele
         )
-        # self.service = self.create_service(
-        #     Trigger, OPEN_RELE_SERVICE_NAME, self.open_rele
-        # )
-        self.get_logger().info("Water Sampler Servo is ready")
+        self.timer = self.create_timer(TIMER_PERIOD, self.timer_callback)
+        self.get_logger().info("LED strip is ready")
 
+    def timer_callback(self):
+        for pixel in self.pixels:
+            pixel = WHITE_COLOR
+
+    def _blink(self, main_color: tuple, secondary_color: tuple):
+        for i in range(1, PIXELS_COUNT - 3):
+            self.pixels[i - 1] = main_color
+            self.pixels[i] = secondary_color
+            self.pixels[i + 1] = secondary_color
+            self.pixels[i + 2] = secondary_color
+            time.sleep(0.3)
+        self.pixels.fill(main_color)
+    
     def trigger_rele(self, request: Trigger.Request, response: Trigger.Response):
         self.get_logger().info("Start trigger rele")
         try:
