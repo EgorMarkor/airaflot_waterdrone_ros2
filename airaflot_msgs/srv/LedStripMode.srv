@@ -1,0 +1,10 @@
+# Request: mode name (one of the predefined LED modes)
+# Available modes:
+uint8 ERROR = 0
+uint8 NOT_READY = 1
+uint8 NORMAL = 2
+uint8 PROCESS = 3
+
+uint8 mode
+---
+bool success

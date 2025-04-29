@@ -16,7 +16,7 @@ NODE_NAME = "echo_sounder"
 
 START_COMMAND = "start\r\n".encode()
 STOP_COMMAND = "stop\r\n".encode()
-TIMER_PERIOD = 0.05
+TIMER_PERIOD = 0.5
 
 class EchoSounder(Node):
     def __init__(self) -> None:
@@ -27,7 +27,7 @@ class EchoSounder(Node):
             ECHOSOUNDER_START_SERVICE_NAME,
             self._send_start_command,
         )
-        self.start_service = self.create_service(
+        self.stop_service = self.create_service(
             Trigger,
             ECHOSOUNDER_STOP_SERVICE_NAME,
             self._send_stop_command,

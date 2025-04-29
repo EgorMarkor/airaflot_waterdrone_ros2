@@ -34,6 +34,7 @@ set(msg_files
 set(srv_files
   "srv/WaterSampler.srv"
   "srv/WaterSamplerMotor.srv"
+  "srv/LedStripMode.srv"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}

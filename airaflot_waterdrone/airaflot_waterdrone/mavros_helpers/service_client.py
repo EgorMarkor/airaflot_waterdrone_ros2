@@ -42,5 +42,8 @@ class ServiceClientHelper:
     def destroy(self) -> None:
         self._parent_node.destroy_client(self._client)
 
+    def wait_for_service(self, delay: int = 10) -> bool:
+        return self._client.wait_for_service(timeout_sec=delay)
+
     def done_callback(self, future):
         self.service_done_event.set()

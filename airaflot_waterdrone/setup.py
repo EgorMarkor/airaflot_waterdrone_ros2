@@ -14,7 +14,7 @@ setup(
         ('share/' + package_name, ['package.xml']),
         (os.path.join('share', package_name, 'launch'), glob(os.path.join('launch', '*launch.[pxy][yma]*'))),
     ],
-    install_requires=['setuptools', 'airaflot_msgs', 'mavros_msgs', 'sensor_msgs'],
+    install_requires=['setuptools', 'airaflot_msgs', 'mavros_msgs', 'sensor_msgs', 'pymodbus==3.6.8', 'Flask==3.1.0', 'adafruit-circuitpython-neopixel==6.3.15', 'pyserial==3.5'],
     zip_safe=True,
     maintainer='airalab',
     maintainer_email='airaflot@todo.todo',
@@ -32,8 +32,9 @@ setup(
                 'mode_controller_helper = airaflot_waterdrone.mavros_helpers.mode_controller:main',
                 'gps_external = airaflot_waterdrone.peripheral_modules.gps_external.gps_external:main',
                 'file_saver = airaflot_waterdrone.senders.file_saver.file_saver:main',
-                'ecostab_to_robonomisc = airaflot_waterdrone.scenarios.ecostab_to_robonomics.data_formatter:main',
-                'state_controller = airaflot_waterdrone.state_controller.state_controller:main'
+                'ecostab_sensors_scenario = airaflot_waterdrone.scenarios.ecostab_sensors.data_formatter:main',
+                'state_controller = airaflot_waterdrone.state_controller.state_controller:main',
+                'led_strip = airaflot_waterdrone.peripheral_modules.led_strip.led_strip:main'
         ],
     },
 )

@@ -9,7 +9,7 @@ from rclpy.timer import Timer
 from airaflot_msgs.msg import EcostabSensors
 
 from .sensors import Sensor, pHSensor, ConductivitySensor, ORPSensor, OxxygenSensor, EmulateSensor
-from ...const_names import ECOSTAB_SENSORS_TOPIC_NAME
+from ...const_names import ECOSTAB_SENSORS_TOPIC_NAME, EMULATE_SENSORS_PARAM
 from ..config_wiring import ECOSTAB_SENSORS_PORT
 from ..config import EMULATE_ECOSTAB_SENSORS
 
@@ -23,10 +23,12 @@ class EcostabSensorsNode(LifecycleNode):
         self.timer: tp.Optional[Timer] = None
         self.modbus_client: tp.Optional[ModbusClient.ModbusSerialClient] = None
         super().__init__(NODE_NAME, **kwargs)
-        self.declare_parameter("emulate_sensors", False)
+        self.declare_parameter(EMULATE_SENSORS_PARAM, False)
+        self.get_logger().info("Ecostab sensors publisher is unconfigured")
 
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
-        emulate_sensors = self.get_parameter('emulate_sensors').get_parameter_value().bool_value
+        emulate_sensors = self.get_parameter(EMULATE_SENSORS_PARAM).get_parameter_value().bool_value
+        self.get_logger().info(f"Start configure Ecostab Sensors Publisher, emulate_sensors: {emulate_sensors}")
         if emulate_sensors:
             self.sensors: tp.List[Sensor] = [EmulateSensor()]
         else:
@@ -48,6 +50,7 @@ class EcostabSensorsNode(LifecycleNode):
         self.publisher = self.create_lifecycle_publisher(EcostabSensors, ECOSTAB_SENSORS_TOPIC_NAME, 10)
         timer_period = 1  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
+        self.get_logger().info("Ecostab sensors publisher is configured")
         return TransitionCallbackReturn.SUCCESS
     
     
@@ -58,7 +61,7 @@ class EcostabSensorsNode(LifecycleNode):
             self.modbus_client.close()
         self.sensors.clear()
 
-        self.get_logger().info('on_cleanup() is called.')
+        self.get_logger().info('Ecostab sensors publisher on_cleanup()')
         return TransitionCallbackReturn.SUCCESS
     
     def on_shutdown(self, state: LifecycleState) -> TransitionCallbackReturn:
@@ -68,7 +71,7 @@ class EcostabSensorsNode(LifecycleNode):
             self.modbus_client.close()
         self.sensors.clear()
 
-        self.get_logger().info('on_shutdown() is called.')
+        self.get_logger().info('Ecostab sensors publisher on_shutdown()')
         return TransitionCallbackReturn.SUCCESS
 
     def timer_callback(self):

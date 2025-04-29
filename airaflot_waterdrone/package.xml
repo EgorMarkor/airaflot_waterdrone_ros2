@@ -13,6 +13,9 @@
   <exec_depend>mavros_msgs</exec_depend>
   <exec_depend>ros2launch</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>pyModbusTCP</exec_depend>
+  <exec_depend>python-flask</exec_depend>
+  <exec_depend>python-serial</exec_depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

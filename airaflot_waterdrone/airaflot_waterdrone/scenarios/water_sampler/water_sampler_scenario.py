@@ -7,39 +7,43 @@ from rclpy.node import Node, Subscription, Client
 from mavros_msgs.msg import RCIn
 from rclpy.timer import Timer
 from airaflot_msgs.srv import WaterSampler
-from airaflot_msgs.msg import ScenarioStateMsg
+from airaflot_msgs.msg import ScenarioStateMsg, NMEAGPGGA
 from rclpy.lifecycle import LifecycleNode, LifecycleState, TransitionCallbackReturn, LifecyclePublisher
+from sensor_msgs.msg import NavSatFix
 
-from .config_channels import WATER_SAMPLER_CHANNEL_NUMBER, TASK_1_CHANNEL, TASK_2_CHANNEL, TASK_3_CHANNEL, TASK_4_CHANNEL, CHANNELS_DIFF
-from ...const_names import RUN_WATER_SAMPLER_SERVICE_NAME, SCENARIO_STATE_TOPIC_NAME
+from airaflot_waterdrone.mavros_helpers.rc_listener import RCListenerHelper
+from airaflot_waterdrone.mavros_helpers.mission_listener import MissionListener
+from ...const_names import RUN_WATER_SAMPLER_SERVICE_NAME, SCENARIO_STATE_TOPIC_NAME, DEFAULT_DEPTH_PARAM
 
 NODE_NAME = "water_sampler_scenario"
 RC_IN_TOPIC_NAME = "/mavros/rc/in"
-WATER_SAMPLER_CHANNEL_INDEX = WATER_SAMPLER_CHANNEL_NUMBER - 1
+DEFAULT_DEPTH = 30
 
 class RCCommandsController(LifecycleNode):
 
     def __init__(self):
         super().__init__(NODE_NAME)
-        self.subscription: tp.Optional[Subscription] = None
+        self.rc_listener: tp.Optional[RCListenerHelper] = None
+        self.mission_listener: tp.Optional[MissionListener] = None
+        self.state_subscription: tp.Optional[Subscription] = None
         self.timer: tp.Optional[Timer] = None
         self.water_sampler_service_client: tp.Optional[Client] = None
         self.state_publisher: tp.Optional[LifecyclePublisher] = None
-        self.current_channel_value = 1000
         self._state: int = ScenarioStateMsg.WAIT_FOR_COMMAND
+        self._water_sampler_state: int = ScenarioStateMsg.WAIT_FOR_COMMAND
+        self.default_depth = DEFAULT_DEPTH
+        self.declare_parameter(DEFAULT_DEPTH_PARAM, DEFAULT_DEPTH)
         self.get_logger().info("Water Sampler Scenario is unconfigured")
 
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
-        self.subscription = self.create_subscription(
-            RCIn,
-            RC_IN_TOPIC_NAME,
-            self.listener_callback,
-            10)
+        self.default_depth = self.get_parameter(DEFAULT_DEPTH_PARAM).get_parameter_value().integer_value
+        self.rc_listener = RCListenerHelper(self, self.run_service)
+        self.mission_listener = MissionListener(self, self.run_service)
+        self.state_subscription = self.create_subscription(ScenarioStateMsg, SCENARIO_STATE_TOPIC_NAME, self.state_callback, 10)
         self.water_sampler_service_client = self.create_client(
             WaterSampler, RUN_WATER_SAMPLER_SERVICE_NAME
         )
         self.state_publisher = self.create_lifecycle_publisher(ScenarioStateMsg, SCENARIO_STATE_TOPIC_NAME, 10)
-        self.subscription
         timer_period = 1  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
         self.get_logger().info("Water Sampler Scenario is configured")
@@ -47,23 +51,27 @@ class RCCommandsController(LifecycleNode):
 
     def on_cleanup(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.destroy_client(self.water_sampler_service_client)
-        self.destroy_subscription(self.subscription)
+        self.rc_listener.destroy()
         self.destroy_lifecycle_publisher(self.state_publisher)
         self.destroy_timer(self.timer)
-        self.current_channel_value = 1000
 
         self.get_logger().info("Water Sampler Scenario cleanup")
         return TransitionCallbackReturn.SUCCESS
     
     def on_shutdown(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.destroy_client(self.water_sampler_service_client)
-        self.destroy_subscription(self.subscription)
+        self.rc_listener.destroy()
+        self.mission_listener.destroy()
         self.destroy_lifecycle_publisher(self.state_publisher)
         self.destroy_timer(self.timer)
-        self.current_channel_value = 1000
 
         self.get_logger().info("Water Sampler Scenario shutdown")
         return TransitionCallbackReturn.SUCCESS
+
+    def state_callback(self, data: ScenarioStateMsg) -> None:
+        if data.node_name == "water_sampler":
+            self._water_sampler_state = data.state
+            self._state = self._water_sampler_state
 
     def timer_callback(self) -> None:
         msg = ScenarioStateMsg()
@@ -72,29 +80,15 @@ class RCCommandsController(LifecycleNode):
             msg.state = self._state
             self.state_publisher.publish(msg)
 
-    def listener_callback(self, msg: RCIn):
-        self.get_logger().debug(f"Channels: {msg.channels}")
-        if len(msg.channels) > 0:
-            self.get_logger().debug(f"Channel 9: {msg.channels[WATER_SAMPLER_CHANNEL_INDEX]}")
-            if abs(msg.channels[WATER_SAMPLER_CHANNEL_INDEX] - self.current_channel_value) > CHANNELS_DIFF:
-                task_mode = self._get_task_mode(msg.channels[WATER_SAMPLER_CHANNEL_INDEX])
-                if task_mode is not None:
-                    self.get_logger().info(f"Got command to run Water Sampler service with mode {task_mode}")
-                    request = WaterSampler.Request()
-                    request.mode = task_mode
-                    self.water_sampler_service_client.call_async(request)
-            self.current_channel_value = msg.channels[WATER_SAMPLER_CHANNEL_INDEX]
+    def run_service(self, depth: tp.Optional[int] = None):
+        if self._water_sampler_state == ScenarioStateMsg.WAIT_FOR_COMMAND:
+            depth = depth if depth else self.default_depth
+            self.get_logger().info(f"Got command to run Water Sampler service with depth {depth}")
+            request = WaterSampler.Request()
+            request.depth = depth
+            self.water_sampler_service_client.call_async(request)
+            self._water_sampler_state = ScenarioStateMsg.WORK
 
-    def _get_task_mode(self, channel_value: int) -> tp.Optional[int]:
-        if abs(channel_value - TASK_1_CHANNEL) < 10:
-            return 1
-        if abs(channel_value - TASK_2_CHANNEL) < 10:
-            return 2
-        if abs(channel_value - TASK_3_CHANNEL) < 10:
-            return 3
-        if abs(channel_value - TASK_4_CHANNEL) < 10:
-            return 4
-        return None
 
 
 def main(args=None):

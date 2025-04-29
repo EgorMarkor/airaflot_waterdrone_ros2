@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Scenario Selector</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: auto;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        label {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        select {
+            padding: 8px;
+            font-size: 16px;
+        }
+
+        button {
+            padding: 8px 12px;
+            margin: 5px;
+            font-size: 14px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .node-section {
+            margin-top: 20px;
+        }
+
+        .node-section h3 {
+            margin-bottom: 10px;
+            color: #444;
+        }
+
+        ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        li {
+            margin: 6px 0;
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            width: 200px;
+            padding: 6px;
+            font-size: 14px;
+        }
+
+        input[type="checkbox"] {
+            transform: scale(1.3);
+            margin-left: 10px;
+        }
+
+        .status h3 {
+            margin-top: 10px;
+        }
+
+        .state-active {
+            color: green;
+            font-weight: bold;
+        }
+
+        .state-dead {
+            color: red;
+            font-weight: bold;
+        }
+
+        .state-unconfigured {
+            color: orange;
+            font-weight: bold;
+        }
+
+        .button-group {
+            margin-top: 10px;
+        }
+
+        .file-tree ul {
+            list-style-type: none;
+            padding-left: 18px;
+            margin: 0;
+        }
+        .file-tree li {
+            margin: 3px 0;
+            line-height: 1.7;
+            font-size: 15px;
+        }
+        .folder-label {
+            cursor: pointer;
+            font-weight: 500;
+            color: #007bff;
+            user-select: none;
+        }
+        .folder-label::before {
+            content: "📁";
+            margin-right: 6px;
+        }
+        .folder-label.open::before {
+            content: "📂";
+        }
+        .file-label {
+            color: #333;
+            cursor: pointer;
+            font-weight: 400;
+        }
+        .file-label::before {
+            content: "📄";
+            margin-right: 6px;
+        }
+        .file-label:hover {
+            text-decoration: underline;
+            color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Scenario Selector</h1>
+
+    <div class="card">
+        <label for="scenario">Select a scenario:</label>
+        <select name="scenario" id="scenario" onchange="changeScenario(this.value)">
+            {% for scenario in scenario_list %}
+                <option value="{{ scenario.name }}" {% if current_scenario and scenario.name == current_scenario.name %}selected{% endif %}>
+                    {{ scenario.name }}
+                </option>
+            {% endfor %}
+        </select>
+        <div id="scenario-warning" style="color: red; margin-top: 10px; display: none;">
+            Stop nodes before changing the scenario.
+        </div>
+    </div>
+
+    <div class="card status">
+        <h2>Active Scenario: <span id="current-scenario" class="">Loading...</span></h2>
+        <h3>State: <span id="scenario-state" class="">Loading...</span></h3>
+    </div>
+
+    <div class="card">
+        <h2>Nodes and States</h2>
+        <div class="button-group">
+            <button onclick="fetch('/activate').then(response => response.text()).then(alert)">Run Nodes</button>
+            <button onclick="fetch('/deactivate').then(response => response.text()).then(alert)">Stop Nodes</button>
+        </div>
+        <div id="nodes">Loading...</div>
+    </div>
+
+    <div class="card">
+        <h2>Parameters</h2>
+        <div id="parameters">Loading...</div>
+        <div class="button-group">
+            <button onclick="saveParameters()">Save Parameters</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Log Files</h2>
+        <div id="log-files">Loading...</div>
+        <pre id="file-content" style="background:#f2f2f2; padding:10px; margin-top:10px; display:none;"></pre>
+    </div>
+
+    <div class="card">
+        <h2>Measurement Files</h2>
+        <div id="meas-files">Loading...</div>
+        <pre id="file-content" style="background:#f2f2f2; padding:10px; margin-top:10px; display:none;"></pre>
+    </div>
+</div>
+
+<script>
+
+function changeScenario(scenarioName) {
+    fetch('/select_scenario', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `scenario=${encodeURIComponent(scenarioName)}`
+    })
+    .then(() => location.reload())
+    .catch(err => alert("Failed to change scenario: " + err.message));
+}
+
+function getStateClass(state) {
+    if (state === "active") return "state-active";
+    if (state === "dead") return "state-dead";
+    if (state === "unconfigured") return "state-unconfigured";
+    return "";
+}
+
+function loadParameters() {
+    fetch('/project_state')
+        .then(response => response.json())
+        .then(data => {
+            let html = "";
+            for (const [node, params] of Object.entries(data.parameters)) {
+                html += `<div class="node-section"><h3>${node}</h3><ul>`;
+                params.forEach(param => {
+                    const inputId = `${node}_${param.name}`;
+                    html += `<li>${param.name}: `;
+                    if (param.editable) {
+                        if (param.type === 3) {
+                            html += `<input type="text" id="${inputId}" value="${param.value}">`;
+                        } else if (param.type === 1) {
+                            html += `<input type="checkbox" id="${inputId}" ${param.value ? "checked" : ""}>`;
+                        } else if (param.type === 2) {
+                            html += `<input type="number" id="${inputId}" value="${param.value}">`;
+                        }
+                    } else {
+                        html += `<span>${param.value}</span>`;
+                    }
+                    html += `</li>`;
+                });
+                html += "</ul></div>";
+            }
+            document.getElementById("parameters").innerHTML = html;
+        });
+}
+
+function loadStatusAndNodes() {
+    fetch('/project_state')
+        .then(response => response.json())
+        .then(data => {
+            const stateElem = document.getElementById('scenario-state');
+            stateElem.textContent = data.current_scenario.state;
+            stateElem.className = getStateClass(data.state);
+
+            const currentScenarioElem = document.getElementById('current-scenario');
+            currentScenarioElem.textContent = data.current_scenario.name;
+
+            const scenarioSelect = document.getElementById('scenario');
+            const warningElem = document.getElementById('scenario-warning');
+            const allUnconfigured = data.nodes.every(n => n.state === 'unconfigured');
+            scenarioSelect.disabled = !allUnconfigured;
+            warningElem.style.display = allUnconfigured ? 'none' : 'block';
+
+            let list = '<ul>';
+            data.nodes.forEach(n => {
+                let action = n.state === "active" ? "deactivate" : "activate";
+                let stateClass = getStateClass(n.state);
+                list += `<li>${n.full_name}: <span class="${stateClass}">${n.state}</span> 
+                            <button onclick="fetch('/node_action?name=${n.full_name}&action=${action}').then(response => response.text()).then(alert)">
+                                ${action.charAt(0).toUpperCase() + action.slice(1)}
+                            </button>
+                         </li>`;
+            });
+            list += '</ul>';
+            document.getElementById('nodes').innerHTML = list;
+        });
+}
+
+function saveParameters() {
+    fetch('/project_state')
+        .then(response => response.json())
+        .then(data => {
+            let updated = [];
+            for (const [node, params] of Object.entries(data.parameters)) {
+                params.forEach(param => {
+                    if (param.editable) {
+                        const inputId = `${node}_${param.name}`;
+                        let value;
+                        if (param.type === 3) {
+                            value = document.getElementById(inputId).value;
+                        } else if (param.type === 1) {
+                            value = document.getElementById(inputId).checked;
+                        } else if (param.type === 2) {
+                            value = parseInt(document.getElementById(inputId).value);
+                        }
+                        updated.push({ node, name: param.name, type: param.type, value });
+                    }
+                });
+            }
+
+            fetch('/set_parameters', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updated)
+            }).then(response => response.text())
+              .then(msg => {
+                alert(msg);
+                loadParameters();  // reload after saving
+              });
+        });
+}
+
+function loadLogFiles() {
+    fetch('/list_log_files')
+        .then(response => response.json())
+        .then(data => {
+            let html = renderFileTree(data.files)
+            document.getElementById('log-files').innerHTML = html;
+        });
+}
+
+function loadMeasFiles() {
+    fetch('/list_meas_files')
+        .then(response => response.json())
+        .then(data => {
+            let html = renderFileTree(data.files)
+            document.getElementById('meas-files').innerHTML = html;
+        });
+}
+
+function renderFileTree(items) {
+    let html = '<ul>';
+    for (const item of items) {
+        if (item.isdir) {
+            html += `<li>
+                        <span class="folder-label" onclick="toggleFolder(event)">${item.name}</span>
+                        <div class="folder-content" style="display:none;">
+                            ${renderFileTree(item.items)}
+                        </div>
+                     </li>`;
+        } else {
+            html += `<li><span class="file-label" onclick="showFileContent('${item.path}')">${item.name}</span></li>`;
+        }
+    }
+    html += '</ul>';
+    return html;
+}
+
+function toggleFolder(event) {
+    event.stopPropagation();
+    const content = event.target.nextElementSibling;
+    if (content.style.display === "none") {
+        content.style.display = "block";
+        event.target.classList.add('open');
+    } else {
+        content.style.display = "none";
+        event.target.classList.remove('open');
+    }
+}
+
+function showFileContent(filepath) {
+    fetch('/file_content?filepath=' + encodeURIComponent(filepath))
+        .then(response => response.text())
+        .then(text => {
+            const pre = document.getElementById('file-content');
+            pre.textContent = text;
+            pre.style.display = 'block';
+        });
+}
+
+loadStatusAndNodes();
+loadParameters();
+loadLogFiles();
+loadMeasFiles();
+setInterval(loadStatusAndNodes, 2000);
+
+</script>
+</body>
+</html>

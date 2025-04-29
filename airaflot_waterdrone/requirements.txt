@@ -1,2 +1,5 @@
 pymodbus==3.6.8
 rpimotorlib==3.2
+Flask==3.1.0
+adafruit-circuitpython-neopixel==6.3.15
+pyserial==3.5

@@ -1,7 +1,7 @@
 import rclpy
 import time
 
-from rclpy.node import Node
+from rclpy.node import Node, Service
 from rclpy.executors import ExternalShutdownException
 import RPi.GPIO as GPIO
 import pymodbus.client as ModbusClient
@@ -61,9 +61,9 @@ class WaterSamplerReleNode(LifecycleNode):
     def trigger_rele(self, request: Trigger.Request, response: Trigger.Response):
         self.get_logger().info("Start trigger rele")
         try:
-            # self.modbus_client.write_register(112,1,1)
-            # time.sleep(OPEN_RELE_DELAY)
-            # self.modbus_client.write_register(112,0,1)
+            self.modbus_client.write_register(112,1,1)
+            time.sleep(OPEN_RELE_DELAY)
+            self.modbus_client.write_register(112,0,1)
             response.success = True
             response.message = "ok"
         except Exception as e:

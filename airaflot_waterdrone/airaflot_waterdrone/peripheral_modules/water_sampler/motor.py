@@ -1,6 +1,6 @@
 import rclpy
 from rclpy.executors import ExternalShutdownException
-from rclpy.node import Node
+from rclpy.node import Service
 import RPi.GPIO as GPIO
 from RpiMotorLib import RpiMotorLib
 import time
@@ -59,7 +59,7 @@ class WaterSamplerMotorNode(LifecycleNode):
         self.get_logger().info(f"Run water sampler motor down to {request.distance_cm} cm")
         try:
             revolutions = self._get_revolutions(request.distance_cm)
-            # self._run_stepper(revolutions, direction_down=True)
+            self._run_stepper(revolutions, direction_down=True)
             response.success = True
         except Exception as e:
             self.get_logger().error(f"Run motor down service faild with error {e}")
@@ -72,7 +72,7 @@ class WaterSamplerMotorNode(LifecycleNode):
         self.get_logger().info(f"Run water sampler motor up to {request.distance_cm} cm")
         try:
             revolutions = self._get_revolutions(request.distance_cm)
-            # self._run_stepper(revolutions, direction_down=False)
+            self._run_stepper(revolutions, direction_down=False)
             response.success = True
         except Exception as e:
             self.get_logger().error(f"Run motor up service faild with error {e}")

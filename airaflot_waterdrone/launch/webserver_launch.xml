@@ -1,4 +1,4 @@
 <launch>
-    <node pkg="airaflot_waterdrone" exec="state_controller" name="state_controller" respawn="true" ros_args="--log-file-name state_controller"/>
+    <node pkg="airaflot_waterdrone" exec="state_controller" name="state_controller" respawn="true"/>
 
 </launch>

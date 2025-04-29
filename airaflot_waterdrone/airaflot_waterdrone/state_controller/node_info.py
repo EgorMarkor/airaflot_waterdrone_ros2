@@ -2,17 +2,25 @@ import rclpy
 from rclpy.node import Node
 
 from rclpy.callback_groups import ReentrantCallbackGroup
-from lifecycle_msgs.srv import ChangeState
+from lifecycle_msgs.srv import ChangeState, GetState
 from lifecycle_msgs.msg import Transition
+from airaflot_waterdrone.mavros_helpers.service_client import ServiceClientHelper
+from rcl_interfaces.srv import SetParameters
+from rcl_interfaces.msg import Parameter
+
 
 NODE_NAME = "state_controller"
 
 class NodeInfo:
-    def __init__(self, full_name: str, helper_node: Node, callback_group: ReentrantCallbackGroup) -> None:
+    def __init__(self, full_name: str, helper_node: Node) -> None:
         self.full_name = full_name
         self.helper_node = helper_node
         self.state: str = "unconfigured"
-        self._change_state_client = self.helper_node.create_client(ChangeState, f"{self.full_name}/change_state", callback_group=callback_group)
+        self._change_state_callback_group = ReentrantCallbackGroup()
+        self._get_state_callback_group = ReentrantCallbackGroup()
+        self._change_state_client = ServiceClientHelper(self.helper_node, ChangeState, f"{self.full_name}/change_state")
+        self._get_state_client = ServiceClientHelper(self.helper_node, GetState, f"{self.full_name}/get_state")
+        self._set_param_client = ServiceClientHelper(self.helper_node, SetParameters, f"{self.full_name}/set_parameters")
 
     def configure(self) -> bool:
         if self.state == "unconfigured":
@@ -62,6 +70,36 @@ class NodeInfo:
             self.helper_node.get_logger().error(f"Error in change state: wrong current state")
             return False
 
+    def request_state(self) -> str:
+        if not self._get_state_client.wait_for_service():
+            self.helper_node.get_logger().error(f"Error in get state: no service exists")
+            self.state = "dead"
+            return "dead"
+        request = GetState.Request()
+        try:
+            result = self._get_state_client.call_from_callback(request)
+        except Exception as e:
+            self.helper_node.get_logger().error(f"Error in get state: {e}")
+            self.state = "dead"
+            return "dead"
+        self.helper_node.get_logger().info(f"GetState Response for {self.full_name}: {result.current_state.label}")
+        self.state = result.current_state.label
+        return result.current_state.label
+
+    def set_parameters(self, parameters: list[Parameter]) -> bool:
+        if not self._set_param_client.wait_for_service():
+            self.helper_node.get_logger().error(f"Error in set parameters {parameters}: no service exists")
+            return False
+        try:
+            request = SetParameters.Request()
+            request.parameters = parameters
+            result: SetParameters.Response = self._set_param_client.call_from_callback(request)
+        except Exception as e:
+            self.helper_node.get_logger().error(f"Error in set parameters {parameters}: {e}")
+            return False
+        return True
+
+
     def update_state(self, states: dict) -> bool:
         if self.full_name in states:
             self.state = states[self.full_name].label
@@ -70,24 +108,15 @@ class NodeInfo:
             return False
         
     def _change_state(self, state_id: int) -> bool:
-        counter = 0
-        while not self._change_state_client.wait_for_service(timeout_sec=1.0):
-            self.helper_node.get_logger().warn(f'Waiting for {self.full_name} service...')
-            counter += 1
-            if counter > 10:
-                self.helper_node.get_logger().error(f"Error in change state: no service exists")
-                return False
+        if not self._change_state_client.wait_for_service():
+            self.helper_node.get_logger().error(f"Error in change state: no service exists")
+            return False
         request = ChangeState.Request()
         request.transition.id = state_id
-        future = self._change_state_client.call_async(request)
         try:
-            rclpy.spin_until_future_complete(self.helper_node, future)
+            result = self._change_state_client.call_from_callback(request)
         except Exception as e:
             self.helper_node.get_logger().error(f"Error in change state: {e}")
             return False
-        if future.result():
-            self.helper_node.get_logger().info(f"ChangeState Response for {self.full_name} to {state_id}: {future.result().success}")
-            return future.result().success
-        else:
-            self.helper_node.get_logger().error(f"Service call for {self.full_name} to {state_id} failed.")
-            return False
+        self.helper_node.get_logger().info(f"ChangeState Response for {self.full_name} to {state_id}: {result.success}")
+        return result.success
