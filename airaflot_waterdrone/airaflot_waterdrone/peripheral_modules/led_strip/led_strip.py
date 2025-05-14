@@ -17,9 +17,12 @@ from .led_modes import LedMode, LedColor
 
 NODE_NAME = "led_strip"
 
-PIXELS_COUNT = 40
+PIXELS_COUNT = 39
+LINE_COUNT = 3
+LED_IN_LINE_COUNT = 13
 
-TIMER_PERIOD = 2
+
+TIMER_PERIOD = 4
 
 
 class LedStripNode(Node):
@@ -42,15 +45,8 @@ class LedStripNode(Node):
             self.pixels.fill(self.current_mode.main_color)
 
     def _one_blink(self, main_color: tuple, secondary_color: tuple):
-        for i in range(1, PIXELS_COUNT - 6):
-            self.pixels[i - 1] = main_color
-            self.pixels[i] = secondary_color
-            self.pixels[i + 1] = secondary_color
-            self.pixels[i + 2] = secondary_color
-            self.pixels[i + 3] = secondary_color
-            self.pixels[i + 4] = secondary_color
-            self.pixels[i + 5] = secondary_color
-            time.sleep(0.1)
+        self.pixels.fill(secondary_color)
+        time.sleep(TIMER_PERIOD / 2)
         self.pixels.fill(main_color)
     
     def set_mode(self, request: LedStripMode.Request, response: LedStripMode.Response):

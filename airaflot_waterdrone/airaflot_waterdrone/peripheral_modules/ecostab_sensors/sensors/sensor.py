@@ -5,7 +5,14 @@ import pymodbus.client as ModbusClient
 from airaflot_msgs.msg import EcostabSensors
 
 class Sensor(ABC):
-    def __init__(self, modbus_client: ModbusClient.ModbusSerialClient) -> None:
+    def __init__(self) -> None:
+        self.client: ModbusClient.ModbusSerialClient | None = None
+        self.name: str | None = None
+        self.slave_id: int | None = None
+        self.registers: list = []
+        self.use_param: str | None = None
+
+    def activate(self, modbus_client: ModbusClient.ModbusSerialClient) -> None:
         self.client = modbus_client
 
     @abstractmethod

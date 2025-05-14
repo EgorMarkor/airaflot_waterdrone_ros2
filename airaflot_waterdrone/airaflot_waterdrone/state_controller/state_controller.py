@@ -39,7 +39,7 @@ class StateControllerNode(Node):
 
         self.command_queue = queue.Queue()  # Queue for web commands
 
-        self.timer_fetch_callback_group = MutuallyExclusiveCallbackGroup()
+        self.timer_fetch_callback_group = ReentrantCallbackGroup()
         self.timer_call_callback_group = MutuallyExclusiveCallbackGroup()
         self.timer_check_callback_group = MutuallyExclusiveCallbackGroup()
         self.subscriber_callback_group = MutuallyExclusiveCallbackGroup()
@@ -111,7 +111,11 @@ class StateControllerNode(Node):
         self.webserver.set_scenario_state(self.scenario_state)
 
     def timer_check_callback(self):
-        if (datetime.now() - self.last_node_fetch_time) > timedelta(seconds = 10):
+        if (datetime.now() - self.last_node_fetch_time) > timedelta(seconds = 20):
+            self.get_logger().error("Fetch timer blocker")
+            # self.helper_node_fetch.
+            self.executor.shutdown()
+            raise Exception("Can't restart timer")
             self.get_logger().warn("Restart fetch timer")
             self.last_node_fetch_time = datetime.now()
             self.destroy_timer(self.timer_fetch)
@@ -142,6 +146,9 @@ class StateControllerNode(Node):
                     if self.nodes[node_name].deactivate():
                         self.get_logger().info(f"Cleaning up {node_name}")
                         self.nodes[node_name].cleanup()
+            elif command.startswith("run_main_service"):
+                service_client = ServiceClientHelper(self, self.current_scenario.main_service_info.type, self.current_scenario.main_service_info.name)
+                service_client.call_from_callback(self.current_scenario.main_service_info.request)
 
     def timer_fetch_callback(self):
         self.get_logger().info("Timer callback: fetch nodes states.")

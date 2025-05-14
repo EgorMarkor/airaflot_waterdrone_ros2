@@ -11,11 +11,9 @@ from rclpy.lifecycle import LifecycleNode, LifecycleState, TransitionCallbackRet
 
 from airaflot_msgs.srv import WaterSamplerMotor
 
-from ...const_names import DOWN_WATER_SAMPLER_MOTOR_SERVICE_NAME, UP_WATER_SAMPLER_MOTOR_SERVICE_NAME
+from ...const_names import DOWN_WATER_SAMPLER_MOTOR_SERVICE_NAME, UP_WATER_SAMPLER_MOTOR_SERVICE_NAME, EMULATE_MOTOR_PARAM
 
 NODE_NAME = "water_sampler_motor"
-
-GET_SAMPLE_DELAY = 3 * 60 # sec
 
 class WaterSamplerMotorNode(LifecycleNode):
     def __init__(self):
@@ -23,15 +21,20 @@ class WaterSamplerMotorNode(LifecycleNode):
         self.service_up: tp.Optional[Service] = None
         self.service_down: tp.Optional[Service] = None
         self.serial: tp.Optional[serial.Serial] = None
+        self._emulate = False
+        self.declare_parameter(EMULATE_MOTOR_PARAM, False)
         self.get_logger().info("Water Sampler Motor is uncofigured")
 
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
-        port = self._find_port()
-        if port is None:
-            self.get_logger().error("Can't find Arduino port for motor")
-            return TransitionCallbackReturn.FAILURE
-        self.get_logger().info(f"Found arduino port {port}")
-        self._setup_serial(port)
+        self._emulate = self.get_parameter(EMULATE_MOTOR_PARAM).get_parameter_value().bool_value
+        self.get_logger().info(f"Start configure Water Sampler Motor, emulate: {self._emulate}")
+        if not self._emulate:
+            port = self._find_port()
+            if port is None:
+                self.get_logger().error("Can't find Arduino port for motor")
+                return TransitionCallbackReturn.FAILURE
+            self.get_logger().info(f"Found arduino port {port}")
+            self._setup_serial(port)
         self.service_up = self.create_service(
             WaterSamplerMotor, DOWN_WATER_SAMPLER_MOTOR_SERVICE_NAME, self.down_motor
         )
@@ -86,14 +89,15 @@ class WaterSamplerMotorNode(LifecycleNode):
 
     def _run_stepper(self, revolutions: float, direction_down: bool) -> None:
         self.get_logger().info(f"Run motor to {revolutions} revolutions {'down' if direction_down else 'up'}")
-        direction = 1 if direction_down else -1
-        command = f"{revolutions * direction * 40}\n"
-        self.serial.write(command.encode())
-        time.sleep(1)
-        res = self.serial.readline().decode().strip()
-        while res != "DONE":
-            self.get_logger().info(res)
+        if not self._emulate:
+            direction = 1 if direction_down else -1
+            command = f"{revolutions * direction * 40}\n"
+            self.serial.write(command.encode())
+            time.sleep(1)
             res = self.serial.readline().decode().strip()
+            while res != "DONE":
+                self.get_logger().info(res)
+                res = self.serial.readline().decode().strip()
         self.get_logger().info("Motor finished")
 
     def _get_revolutions(self, distance_cm: int) -> int:

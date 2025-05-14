@@ -13,7 +13,7 @@ from std_srvs.srv import Trigger
 import typing as tp
 
 from ..config_wiring import WATER_SAMPLER_RELE_PORT
-from ...const_names import TRIGGER_RELE_SERVICE_NAME
+from ...const_names import TRIGGER_RELE_SERVICE_NAME, EMULATE_RELE_PARAM
 
 NODE_NAME = "water_sampler_rele"
 
@@ -27,17 +27,22 @@ class WaterSamplerReleNode(LifecycleNode):
         super().__init__(NODE_NAME)
         self.modbus_client: tp.Optional[ModbusClient.ModbusSerialClient] = None
         self.service: tp.Optional[Service] = None
+        self._emulate = False
+        self.declare_parameter(EMULATE_RELE_PARAM, False)
         self.get_logger().info("Water Sampler Servo is unconfigured")
 
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
-        port = self._find_port()
-        if port is None:
-            self.get_logger().error("Can't find rele port")
-            return TransitionCallbackReturn.FAILURE
-        self.get_logger().info(f"Found rele port {port}")
-        self.modbus_client = ModbusClient.ModbusSerialClient(
-                WATER_SAMPLER_RELE_PORT, baudrate=9600, bytesize=8, stopbits=1
-            )
+        self._emulate = self.get_parameter(EMULATE_RELE_PARAM).get_parameter_value().bool_value
+        self.get_logger().info(f"Start configure Water Sampler Rele, emulate: {self._emulate}")
+        if not self._emulate:
+            port = self._find_port()
+            if port is None:
+                self.get_logger().error("Can't find rele port")
+                return TransitionCallbackReturn.FAILURE
+            self.get_logger().info(f"Found rele port {port}")
+            self.modbus_client = ModbusClient.ModbusSerialClient(
+                    WATER_SAMPLER_RELE_PORT, baudrate=9600, bytesize=8, stopbits=1
+                )
         self.service = self.create_service(
             Trigger, TRIGGER_RELE_SERVICE_NAME, self.trigger_rele
         )
@@ -46,14 +51,16 @@ class WaterSamplerReleNode(LifecycleNode):
 
     def on_cleanup(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.destroy_service(self.service)
-        self.modbus_client.close()
+        if self.modbus_client:
+            self.modbus_client.close()
 
         self.get_logger().info("Water Sampler Servo cleanup")
         return TransitionCallbackReturn.SUCCESS
     
     def on_shutdown(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.destroy_service(self.service)
-        self.modbus_client.close()
+        if self.modbus_client:
+            self.modbus_client.close()
 
         self.get_logger().info("Water Sampler Servo shutdown")
         return TransitionCallbackReturn.SUCCESS
@@ -61,9 +68,10 @@ class WaterSamplerReleNode(LifecycleNode):
     def trigger_rele(self, request: Trigger.Request, response: Trigger.Response):
         self.get_logger().info("Start trigger rele")
         try:
-            self.modbus_client.write_register(112,1,1)
-            time.sleep(OPEN_RELE_DELAY)
-            self.modbus_client.write_register(112,0,1)
+            if not self._emulate:
+                self.modbus_client.write_register(112,1,1)
+                time.sleep(OPEN_RELE_DELAY)
+                self.modbus_client.write_register(112,0,1)
             response.success = True
             response.message = "ok"
         except Exception as e:

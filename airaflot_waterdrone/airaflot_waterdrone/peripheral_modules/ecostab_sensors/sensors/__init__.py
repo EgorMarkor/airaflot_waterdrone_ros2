@@ -4,3 +4,4 @@ from .conductivity import ConductivitySensor
 from .orp import ORPSensor
 from .oxxygen import OxxygenSensor
 from .emulate import EmulateSensor
+from .nitrites import NitriteSensor

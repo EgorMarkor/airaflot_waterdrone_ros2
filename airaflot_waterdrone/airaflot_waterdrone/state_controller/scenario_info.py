@@ -1,4 +1,5 @@
 from rcl_interfaces.msg import Parameter, ParameterType
+from airaflot_msgs.srv import WaterSampler
 import typing as tp
 
 from ..const_names import (
@@ -12,7 +13,16 @@ from ..const_names import (
     MEASUREMENT_DELAY_PARAM,
     EMULATE_SENSORS_PARAM,
     SAMPLING_DELAY_PARAM,
-    DEFAULT_DEPTH_PARAM
+    DEFAULT_DEPTH_PARAM,
+    EMULATE_MOTOR_PARAM,
+    EMULATE_RELE_PARAM,
+    RUN_WATER_SAMPLER_SERVICE_NAME,
+    START_MEASURE_SERVICE_NAME,
+    USE_OXXYGEN_RAPAM,
+    USE_CONDUCTIVITY_RAPAM,
+    USE_NITRITE_RAPAM,
+    USE_ORP_RAPAM,
+    USE_PH_RAPAM
 )
 
 class ScenarioInfo:
@@ -21,6 +31,7 @@ class ScenarioInfo:
         self.node_list = node_list
         self.parameters = parameters
         self.user_set_parameteres = []
+        self.main_service_info: MainServiceInfo | None = None
 
     def get_user_set_parameters(self) -> list[Parameter]:
         return self.user_set_parameteres.copy()
@@ -72,6 +83,12 @@ class WaterSamplerScenario(ScenarioInfo):
             "/water_sampler": [
                 self._create_parameter_int(SAMPLING_DELAY_PARAM, 30)
             ],
+            "/water_sampler_motor": [
+                self._create_parameter_bool(EMULATE_MOTOR_PARAM, False)
+            ],
+            "/water_sampler_rele": [
+                self._create_parameter_bool(EMULATE_RELE_PARAM, False)
+            ],
             "/water_sampler_scenario": [
                 self._create_parameter_int(DEFAULT_DEPTH_PARAM, 30)
             ]
@@ -79,8 +96,13 @@ class WaterSamplerScenario(ScenarioInfo):
         super().__init__(name, node_list, parameters)
         self.user_set_parameteres = [
             self._create_parameter_int(SAMPLING_DELAY_PARAM, 30),
-            self._create_parameter_int(DEFAULT_DEPTH_PARAM, 30)
+            self._create_parameter_int(DEFAULT_DEPTH_PARAM, 30),
+            self._create_parameter_bool(EMULATE_RELE_PARAM, False),
+            self._create_parameter_bool(EMULATE_MOTOR_PARAM, False)
         ]
+        request = WaterSampler.Request()
+        request.depth = 0
+        self.main_service_info = MainServiceInfo(name=RUN_WATER_SAMPLER_SERVICE_NAME, type=WaterSampler, request=request)
 
 class EcostabSensorsScenario(ScenarioInfo):
     def __init__(self):
@@ -97,19 +119,42 @@ class EcostabSensorsScenario(ScenarioInfo):
                 self._create_parameter_str(FILE_PREFIX_PARAM, "ecostab_sensors"),
             ],
             "/ecostab_sensors_publisher": [
-                self._create_parameter_bool(EMULATE_SENSORS_PARAM, False)
+                self._create_parameter_bool(EMULATE_SENSORS_PARAM, False),
+                self._create_parameter_bool(USE_PH_RAPAM, True),
+                self._create_parameter_bool(USE_CONDUCTIVITY_RAPAM, True),
+                self._create_parameter_bool(USE_NITRITE_RAPAM, True),
+                self._create_parameter_bool(USE_ORP_RAPAM, True),
+                self._create_parameter_bool(USE_OXXYGEN_RAPAM, True),
             ],
             "/ecostab_sensors_scenario": [
                 self._create_parameter_bool(USE_EXTERNAL_GPS_PARAM, False),
                 self._create_parameter_int(MEASUREMENT_INTERVAL_PARAM, 5),
                 self._create_parameter_int(MEASUREMENT_DELAY_PARAM, 30),
                 self._create_parameter_int(DEFAULT_DEPTH_PARAM, 30)
-            ]
+            ],
+            "/water_sampler_motor": [
+                self._create_parameter_bool(EMULATE_MOTOR_PARAM, False)
+            ],
         }
         super().__init__(name, node_list, parameters)
         self.user_set_parameteres = [
             self._create_parameter_bool(EMULATE_SENSORS_PARAM, False),
             self._create_parameter_int(MEASUREMENT_INTERVAL_PARAM, 5),
             self._create_parameter_int(MEASUREMENT_DELAY_PARAM, 30),
-            self._create_parameter_int(DEFAULT_DEPTH_PARAM, 30)
+            self._create_parameter_int(DEFAULT_DEPTH_PARAM, 30),
+            self._create_parameter_bool(EMULATE_MOTOR_PARAM, False),
+            self._create_parameter_bool(USE_PH_RAPAM, True),
+            self._create_parameter_bool(USE_CONDUCTIVITY_RAPAM, True),
+            self._create_parameter_bool(USE_NITRITE_RAPAM, True),
+            self._create_parameter_bool(USE_ORP_RAPAM, True),
+            self._create_parameter_bool(USE_OXXYGEN_RAPAM, True),
         ]
+        request = WaterSampler.Request()
+        request.depth = 0
+        self.main_service_info = MainServiceInfo(name=START_MEASURE_SERVICE_NAME, type=WaterSampler, request=request)
+
+class MainServiceInfo:
+    def __init__(self, name: str, type, request):
+        self.name = name
+        self.request = request
+        self.type = type

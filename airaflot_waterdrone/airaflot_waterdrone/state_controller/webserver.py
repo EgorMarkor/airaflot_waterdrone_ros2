@@ -3,6 +3,7 @@ import queue
 from flask import Flask, jsonify, request, render_template, Response
 import os
 from pathlib import Path
+import shutil
 
 from airaflot_msgs.msg import ScenarioStateMsg
 from rcl_interfaces.msg import Parameter, ParameterType
@@ -49,6 +50,12 @@ class WebServer:
             self.logger_callback("Web request: scheduling nodes activation.")
             self.command_queue.put("activate_all")
             return "Nodes activation scheduled."
+        
+        @self.app.route('/run_main_service', methods=["POST"])
+        def run_main_service():
+            self.logger_callback("Web request: running main service.")
+            self.command_queue.put("run_main_service")
+            return "Running main service scheduled."
 
         @self.app.route('/deactivate')
         def deactivate():
@@ -89,7 +96,7 @@ class WebServer:
             project_state = {}
             nodes_list = [{'full_name': node, 'state': self.nodes_states[node]} for node in self.nodes_states]
             project_state["nodes"] = nodes_list
-            project_state["current_scenario"] = {"name": self.current_scenario_name, "state": self.scenario_state}
+            project_state["current_scenario"] = {"name": self.current_scenario_name, "state": self.scenario_state, "main_service_available": self.current_scenario.main_service_info is not None}
             project_state["supported_scenarios"] = self.scenario_names
             editable_names = {param.name for param in self.current_scenario.get_user_set_parameters()}
             data = {}
@@ -146,6 +153,33 @@ class WebServer:
         def log_file_content():
             filepath = request.args.get('filepath')
             return self._read_file(Path(filepath).resolve())
+
+        @self.app.route("/delete_path", methods=["POST"])
+        def delete_path():
+            filepath = request.form.get('filepath')
+            if not filepath:
+                return Response("Missing filepath", status=400)
+            
+            target_path = Path(filepath).resolve()
+            
+            # Resolve and sanitize path
+            if not (str(self.log_saver.parent_log_dir) in str(target_path) or STORE_FILES_PATH in str(target_path)):
+                return Response("Invalid file path", status=403)
+
+            if not target_path.exists():
+                return Response("File or folder not found", status=404)
+
+            try:
+                if target_path.is_file():
+                    target_path.unlink()
+                elif target_path.is_dir():
+                    shutil.rmtree(target_path)
+                else:
+                    return Response("Unsupported file type", status=400)
+            except Exception as e:
+                return Response(f"Error deleting: {str(e)}", status=500)
+
+            return Response("Deleted successfully", status=200)
     
 
     def clear_nodes_list(self) -> None:

@@ -1,9 +1,11 @@
 ### Water Sampler Servo Node ###
 TRIGGER_RELE_SERVICE_NAME = "/airaflot/water_sampler/trigger_rele"
+EMULATE_RELE_PARAM = "emulate_rele"
 
 ### Water Sampler Motor Node ###
 DOWN_WATER_SAMPLER_MOTOR_SERVICE_NAME = "/airaflot/water_sampler/down_motor"
 UP_WATER_SAMPLER_MOTOR_SERVICE_NAME = "/airaflot/water_sampler/up_motor"
+EMULATE_MOTOR_PARAM = "emulate_motor"
 
 ### Water Sampler Node ###
 RUN_WATER_SAMPLER_SERVICE_NAME = "/airaflot/water_sampler/run_water_sampler"
@@ -12,6 +14,11 @@ SAMPLING_DELAY_PARAM = "sampling_delay"
 ### Ecostab Sensors ###
 ECOSTAB_SENSORS_TOPIC_NAME = "/airaflot/ecostab_sensors/data"
 EMULATE_SENSORS_PARAM = "emulate_sensors"
+USE_PH_RAPAM = "use_ph_sensor"
+USE_CONDUCTIVITY_RAPAM = "use_conductivity_sensor"
+USE_NITRITE_RAPAM = "use_nitrite_sensor"
+USE_ORP_RAPAM = "use_orp_sensor"
+USE_OXXYGEN_RAPAM = "use_oxxygen_sensor"
 
 ### Echo Sounder ###
 ECHOSOUNDER_START_SERVICE_NAME = "/airaflot/echo_sounder/start"
@@ -46,3 +53,6 @@ SCENARIO_STATE_TOPIC_NAME = "/airaflot/scenario_state"
 
 ### Led Strip ###
 LED_STRIP_SET_MODE_SERVICE = "/airaflot/set_led_mode"
+
+### Sber Sender ###
+SBER_URL_PARAM = "sber_url"

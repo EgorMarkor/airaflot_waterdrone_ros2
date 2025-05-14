@@ -17,6 +17,8 @@ from rclpy.lifecycle import LifecycleNode, LifecycleState, TransitionCallbackRet
 from airaflot_waterdrone.mavros_helpers.rc_listener import RCListenerHelper
 from airaflot_waterdrone.mavros_helpers.service_client import ServiceClientHelper
 
+from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
+
 from ...const_names import (
     ECOSTAB_SENSORS_TOPIC_NAME,
     GPS_EXTERNAL_DATA_TOPIC_NAME,
@@ -88,11 +90,16 @@ class SensorsDataFormatter(LifecycleNode):
                 NMEAGPGGA, GPS_EXTERNAL_DATA_TOPIC_NAME, self.gps_listener, 10, callback_group=self.send_data_callback_group
             )
         else:
-            self.gps_subscription = self.create_subscription(
-                NavSatFix, GPS_INTERNAL_DATA_TOPIC_NAME, self.gps_listener, 10, callback_group=self.send_data_callback_group
+            qos_profile = QoSProfile(
+                reliability=ReliabilityPolicy.BEST_EFFORT,
+                durability=DurabilityPolicy.VOLATILE,
+                depth=10
             )
-        self.rc_listener = RCListenerHelper(self, self.start_measure)
-        self.mission_listener = MissionListener(self, self.start_measure)
+            self.gps_subscription = self.create_subscription(
+                NavSatFix, GPS_INTERNAL_DATA_TOPIC_NAME, self.gps_listener, qos_profile, callback_group=self.send_data_callback_group
+            )
+        self.rc_listener = RCListenerHelper(self, self._start_measure)
+        self.mission_listener = MissionListener(self, self._start_measure)
         self.publisher = self.create_lifecycle_publisher(DataToSend, DATA_TO_SEND_TOPIC_NAME, 10)
 
         self.down_motor_service_client = ServiceClientHelper(
@@ -114,6 +121,8 @@ class SensorsDataFormatter(LifecycleNode):
             self._service_callback,
             callback_group=self.service_callback_group,
         )
+
+        self.start_measure_client = ServiceClientHelper(self, WaterSampler, START_MEASURE_SERVICE_NAME)
 
         self.state_publisher = self.create_lifecycle_publisher(ScenarioStateMsg, SCENARIO_STATE_TOPIC_NAME, 10)
         self.state_timer = self.create_timer(1, self.state_timer_callback, callback_group=self.send_state_callback_group)
@@ -157,6 +166,11 @@ class SensorsDataFormatter(LifecycleNode):
             self.set_previous_mode_client.call_from_callback(Trigger.Request())
             self._state = ScenarioStateMsg.WAIT_FOR_COMMAND
 
+    def _start_measure(self, depth: tp.Optional[int] = None) -> None:
+        request = WaterSampler.Request()
+        request.depth = depth if depth else self.default_depth
+        self.start_measure_client._client.call_async(request)
+
     def sensors_listener(self, msg: EcostabSensors) -> None:
         self.last_sensors_data = self._format_sensors_data(msg)
 
@@ -178,11 +192,13 @@ class SensorsDataFormatter(LifecycleNode):
     def _service_callback(self, request: WaterSampler.Request, response: WaterSampler.Response):
         self.get_logger().info(f"Run start_measure service with depth {request.depth}")
         self.start_measure(request.depth)
+        response.success = True
+        return response
 
     def _format_sensors_data(
         self, sensors_msg: tp.Optional[EcostabSensors] = None
     ) -> tp.Dict:
-        data = {"temperature": 0.0, "ph": 0.0, "conductivity": 0.0, "orp": 0.0, "oxxygen": 0.0, "oxxygen_saturation": 0.0, "salinity": 0.0, "salinity_tds": 0.0}
+        data = {"temperature": 0.0, "ph": 0.0, "conductivity": 0.0, "orp": 0.0, "oxxygen": 0.0, "oxxygen_saturation": 0.0, "salinity": 0.0, "salinity_tds": 0.0, "no2": 0.0, "no3": 0.0}
         if sensors_msg is not None:
             data["temperature"] = sensors_msg.temperature
             data["conductivity"] = sensors_msg.conductivity
@@ -192,6 +208,8 @@ class SensorsDataFormatter(LifecycleNode):
             data["oxxygen_saturation"] = sensors_msg.oxxygen_saturation
             data["salinity"] = sensors_msg.salinity
             data["salinity_tds"] = sensors_msg.salinity_tds
+            data["no2"] = sensors_msg.no2
+            data["no3"] = sensors_msg.no3
         return data
 
     def _format_gps_data(
@@ -230,6 +248,7 @@ class SensorsDataFormatter(LifecycleNode):
         self.set_previous_mode_client.destroy()
         self.rc_listener.destroy()
         self.mission_listener.destroy()
+        self.start_measure_client.destroy()
         self.is_measure: bool = False
         self.last_sensors_data: tp.Dict = self._format_sensors_data()
         self.last_gps_data: tp.Dict = self._format_gps_data()

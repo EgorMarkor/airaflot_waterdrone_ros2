@@ -9,7 +9,7 @@ WATER_SAMPLER_MOTOR_PORT = "/dev/ttyUSB0"
 
 ### Ecostab Sensors ###
 
-ECOSTAB_SENSORS_PORT = "/dev/ttyUSB0"
+ECOSTAB_SENSORS_PORT = "/dev/ttyUSB2"
 
 ### Echo Sounder ###
 
