@@ -43,6 +43,8 @@ class EcostabSensorsNode(LifecycleNode):
                     self.get_logger().info(f"Sensor {sensor.name} will be used")
             port = self._find_port(self.sensors[0])
             self.get_logger().info(f"Found port: {port}")
+            if port is None:
+                return TransitionCallbackReturn.FAILURE
             time.sleep(0.1)
             self.modbus_client = ModbusClient.ModbusSerialClient(
                 port, baudrate=9600, bytesize=8, stopbits=1
@@ -119,6 +121,7 @@ class EcostabSensorsNode(LifecycleNode):
     #         sensors.append()
 
 def main(args=None):
+
     rclpy.init(args=args)
 
     minimal_publisher = EcostabSensorsNode()

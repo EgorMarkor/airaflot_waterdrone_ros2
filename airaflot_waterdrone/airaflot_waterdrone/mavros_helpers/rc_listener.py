@@ -45,5 +45,5 @@ class RCListenerHelper:
             return 200
         if abs(channel_value - TASK_4_CHANNEL) < 40:
             return 300
-        return None
+        return 0
 

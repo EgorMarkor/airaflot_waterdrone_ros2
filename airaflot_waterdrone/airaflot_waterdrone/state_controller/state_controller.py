@@ -26,10 +26,10 @@ SUPPORTED_SCENARIOS = [WaterSamplerScenario(), EcostabSensorsScenario()]
 
 
 class StateControllerNode(Node):
-    def __init__(self):
+    def __init__(self, current_scenario: ScenarioInfo | None = None):
         super().__init__(NODE_NAME)
         self.log_saver = LogSaver(self, LOG_DIR)
-        self.current_scenario: ScenarioInfo = WaterSamplerScenario()
+        self.current_scenario: ScenarioInfo = current_scenario if current_scenario else WaterSamplerScenario()
         self.scenario_state = -1
         self.prev_scenario_state = -1
         self.scenario_node_states: dict = {}
@@ -39,7 +39,7 @@ class StateControllerNode(Node):
 
         self.command_queue = queue.Queue()  # Queue for web commands
 
-        self.timer_fetch_callback_group = ReentrantCallbackGroup()
+        self.timer_fetch_callback_group = MutuallyExclusiveCallbackGroup()
         self.timer_call_callback_group = MutuallyExclusiveCallbackGroup()
         self.timer_check_callback_group = MutuallyExclusiveCallbackGroup()
         self.subscriber_callback_group = MutuallyExclusiveCallbackGroup()
@@ -111,16 +111,26 @@ class StateControllerNode(Node):
         self.webserver.set_scenario_state(self.scenario_state)
 
     def timer_check_callback(self):
-        if (datetime.now() - self.last_node_fetch_time) > timedelta(seconds = 20):
+        self.get_logger().error(f"Fetch timer call: {datetime.now() - self.last_node_fetch_time}")
+        if (datetime.now() - self.last_node_fetch_time) > timedelta(seconds = 10):
             self.get_logger().error("Fetch timer blocker")
-            # self.helper_node_fetch.
-            self.executor.shutdown()
-            raise Exception("Can't restart timer")
-            self.get_logger().warn("Restart fetch timer")
-            self.last_node_fetch_time = datetime.now()
-            self.destroy_timer(self.timer_fetch)
-            self.timer_fetch_callback_group = MutuallyExclusiveCallbackGroup()
-            self.timer_fetch = self.create_timer(2.0, self.timer_fetch_callback, callback_group=self.timer_fetch_callback_group)
+            # # self.helper_node_fetch.
+            # self.webserver.stop()
+            # self.helper_node_call.destroy_node()
+            # self.helper_node_fetch.destroy_node()
+            # # self.destroy_node()
+            # # self.executor.shutdown()
+            # # self.webserver.stop()
+            # raise Exception("Can't restart timer")
+            # self.get_logger().warn("Restart fetch timer")
+            # self.last_node_fetch_time = datetime.now()
+            # self.destroy_timer(self.timer_fetch)
+            # self.timer_fetch_callback_group = MutuallyExclusiveCallbackGroup()
+            # self.helper_node_fetch.destroy_node()
+            # time.sleep(1)
+            # self.helper_node_fetch = rclpy.create_node("helper_fetch")
+            # self.executor.add_node(self.helper_node_fetch)
+            # self.timer_fetch = self.create_timer(2.0, self.timer_fetch_callback, callback_group=self.timer_fetch_callback_group)
 
     def timer_call_callback(self):
         self.get_logger().info("Timer callback: processing web commands.")
@@ -187,10 +197,25 @@ def main():
         minimal_service = StateControllerNode()
         executor = MultiThreadedExecutor()
         executor.add_node(minimal_service)
-        for node in minimal_service.nodes.values():
-            executor.add_node(node.helper_node)
+        # for node in minimal_service.nodes.values():
+        executor.add_node(minimal_service.helper_node_fetch)
+        executor.add_node(minimal_service.helper_node_call)
         # executor.add_node(minimal_service.helper_node_call)
-        executor.spin()
+        # executor.spin()
+        while True:
+            executor.spin_once()
+            if (datetime.now() - minimal_service.last_node_fetch_time) > timedelta(seconds = 10):
+                minimal_service.get_logger().info("Restart Webserver node!")
+                minimal_service.webserver.stop()
+                minimal_service.helper_node_call.destroy_node()
+                minimal_service.helper_node_fetch.destroy_node()
+                minimal_service.destroy_node()
+                current_scenario = minimal_service.current_scenario
+                time.sleep(2)
+                minimal_service = StateControllerNode(current_scenario)
+                executor.add_node(minimal_service)
+                executor.add_node(minimal_service.helper_node_fetch)
+                executor.add_node(minimal_service.helper_node_call)
         # rclpy.spin(minimal_service, executor)
     except (KeyboardInterrupt, ExternalShutdownException):
         pass

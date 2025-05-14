@@ -167,9 +167,10 @@ class SensorsDataFormatter(LifecycleNode):
             self._state = ScenarioStateMsg.WAIT_FOR_COMMAND
 
     def _start_measure(self, depth: tp.Optional[int] = None) -> None:
-        request = WaterSampler.Request()
-        request.depth = depth if depth else self.default_depth
-        self.start_measure_client._client.call_async(request)
+        if self._state == ScenarioStateMsg.WAIT_FOR_COMMAND:
+            request = WaterSampler.Request()
+            request.depth = depth if depth else self.default_depth
+            self.start_measure_client._client.call_async(request)
 
     def sensors_listener(self, msg: EcostabSensors) -> None:
         self.last_sensors_data = self._format_sensors_data(msg)

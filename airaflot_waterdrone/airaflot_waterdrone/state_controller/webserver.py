@@ -8,6 +8,7 @@ import shutil
 from airaflot_msgs.msg import ScenarioStateMsg
 from rcl_interfaces.msg import Parameter, ParameterType
 from ament_index_python.packages import get_package_share_directory
+from werkzeug.serving import make_server
 
 from .log_saver import LogSaver
 from .scenario_info import WaterSamplerScenario, EcostabSensorsScenario, ScenarioInfo
@@ -33,6 +34,7 @@ class WebServer:
         self.logger_callback = logger_callback
         self.nodes_states: dict[str, str] = {}
         self.app = Flask(__name__, template_folder=self._get_templates_path())
+        self.app_server = ServerThread(self.app)
         self.scenario_state = "NOT_READY"
         self.scenario_names = [scenario.name for scenario in SUPPORTED_SCENARIOS]
         self.current_scenario_name = None
@@ -196,7 +198,8 @@ class WebServer:
         self.scenario_state = state_mapping[scenario_state]
 
     def start(self):
-        threading.Thread(target=self.app.run, kwargs={"host": "0.0.0.0", "port": 5000}, daemon=True).start()
+        # threading.Thread(target=self.app.run, kwargs={"host": "0.0.0.0", "port": 5000}, daemon=True).start()
+        self.app_server.start()
         self.logger_callback("Webserver started on port 5000")
 
     def _get_templates_path(self) -> str:
@@ -223,4 +226,23 @@ class WebServer:
             else:
                 filenames.append({"name": item.name, "path": str(item.absolute()), "isdir": True, "items": self._get_filenames(item)})
         return filenames
+
+    def stop(self) -> None:
+        self.logger_callback("Shutdown webserver")
+        self.app_server.shutdown()
         
+
+
+class ServerThread(threading.Thread):
+    def __init__(self, app):
+        super().__init__()
+        self.server = make_server('0.0.0.0', 5000, app)
+        self.ctx = app.app_context()
+        self.ctx.push()
+    
+    def run(self):
+        print('Starting server')
+        self.server.serve_forever()
+
+    def shutdown(self):
+        self.server.shutdown()

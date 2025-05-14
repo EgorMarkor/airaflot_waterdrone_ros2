@@ -1,10 +1,11 @@
 import random
 
 from airaflot_msgs.msg import EcostabSensors
+from .sensor import Sensor
 
-class EmulateSensor():
-    def __init__(self, modbus_client):
-        super().__init__(modbus_client)
+class EmulateSensor(Sensor):
+    def __init__(self):
+        super().__init__()
         self.name = "Emulate"
         
     def fetch(self, data: EcostabSensors) -> EcostabSensors:

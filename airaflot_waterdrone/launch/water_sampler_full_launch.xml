@@ -2,7 +2,8 @@
     <include file="$(find-pkg-share mavros)/launch/apm.launch">
         <arg name="fcu_url" value="/dev/ttyACM0:57600" />
     </include>
-    <include file="$(find-pkg-share airaflot_waterdrone)/launch/webserver_launch.xml"/>
+    <!-- <include file="$(find-pkg-share airaflot_waterdrone)/launch/webserver_launch.xml"/> -->
+    <node pkg="airaflot_waterdrone" exec="state_controller" name="state_controller" respawn="true"/>
     <node pkg="airaflot_waterdrone" exec="water_sampler_scenario" name="water_sampler_scenario" respawn="true"/>
     <node pkg="airaflot_waterdrone" exec="water_sampler_rele" name="water_sampler_rele" respawn="true"/>
     <node pkg="airaflot_waterdrone" exec="water_sampler_motor" name="water_sampler_motor" respawn="true"/>
