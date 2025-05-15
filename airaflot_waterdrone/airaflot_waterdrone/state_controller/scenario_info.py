@@ -133,7 +133,7 @@ class EcostabSensorsScenario(ScenarioInfo):
                 self._create_parameter_int(DEFAULT_DEPTH_PARAM, 30)
             ],
             "/water_sampler_motor": [
-                self._create_parameter_bool(EMULATE_MOTOR_PARAM, False)
+                self._create_parameter_bool(EMULATE_MOTOR_PARAM, True)
             ],
         }
         super().__init__(name, node_list, parameters)

@@ -65,6 +65,7 @@ class SensorsDataFormatter(LifecycleNode):
         self.state_timer: tp.Optional[Timer] = None
 
         self.is_measure: bool = False
+        self.message_position: int | None = None
 
         ### Other Setup ###
         self._state = ScenarioStateMsg.WAIT_FOR_COMMAND
@@ -154,10 +155,12 @@ class SensorsDataFormatter(LifecycleNode):
             self.get_logger().info(f"")
             motor_request = self._create_motor_service_request(distance)
             self.down_motor_service_client.call_from_callback(motor_request)
-            self.is_measure = True
+            # self.is_measure = True
+            self.message_position = DataToSend.MESSAGE_POS_START
             self.get_logger().info(f"Wait for delay: {self.measurement_delay}")
             time.sleep(self.measurement_delay)
-            self.is_measure = False
+            # self.is_measure = False
+            self.message_position = DataToSend.MESSAGE_POS_LAST
             self.up_motor_service_client.call_from_callback(motor_request)
             self.get_logger().info("Measurement finished")
         except Exception as e:
@@ -186,9 +189,14 @@ class SensorsDataFormatter(LifecycleNode):
             self.state_publisher.publish(msg)
 
     def timer_callback(self) -> None:
-        data_to_send = self._create_data_to_send_msg()
-        if self.publisher and self.publisher.is_activated and self.is_measure:
+        if self.publisher and self.publisher.is_activated and self.message_position is not None:
+            self.get_logger().info(f"Send data to data_to_send, message pos: {self.message_position}")
+            data_to_send = self._create_data_to_send_msg(self.message_position)
             self.publisher.publish(data_to_send)
+            if self.message_position == DataToSend.MESSAGE_POS_START:
+                self.message_position = DataToSend.MESSAGE_POS_CONTINUE
+            elif self.message_position == DataToSend.MESSAGE_POS_LAST:
+                self.message_position = None
 
     def _service_callback(self, request: WaterSampler.Request, response: WaterSampler.Response):
         self.get_logger().info(f"Run start_measure service with depth {request.depth}")
@@ -222,11 +230,12 @@ class SensorsDataFormatter(LifecycleNode):
             data["longitude"] = gps_msg.longitude
         return data
 
-    def _create_data_to_send_msg(self) -> DataToSend:
+    def _create_data_to_send_msg(self, message_position: int = DataToSend.MESSAGE_POS_CONTINUE) -> DataToSend:
         data_to_send = DataToSend()
         data_to_send.timestamp = time.time()
         data_to_send.longitude = self.last_gps_data["longitude"]
         data_to_send.latitude = self.last_gps_data["latitude"]
+        data_to_send.message_position = message_position
         data_to_send.sensors_data = json.dumps(self.last_sensors_data)
         return data_to_send
     
