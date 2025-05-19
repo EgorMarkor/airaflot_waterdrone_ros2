@@ -4,10 +4,10 @@ from airaflot_msgs.msg import EcostabSensors
 
 from ....const_names import USE_PH_RAPAM
 
-PH_SLAVE_ID = 0
+PH_SLAVE_ID = 2
 
-PH_REGISTER = 0
-TEMPERATURE_REGISTER = 2
+PH_REGISTER = 0x9008
+TEMPERATURE_REGISTER = 0x9004
 
 class pHSensor(Sensor):
     def __init__(self):
