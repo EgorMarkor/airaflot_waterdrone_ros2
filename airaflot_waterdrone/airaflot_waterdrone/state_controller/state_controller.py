@@ -15,21 +15,20 @@ from airaflot_waterdrone.mavros_helpers.service_client import ServiceClientHelpe
 
 from .node_info import NodeInfo
 from .webserver import WebServer
-from .scenario_info import ScenarioInfo, WaterSamplerScenario, EcostabSensorsScenario
+from .scenario_info import ScenarioInfo, WaterSamplerScenario, EcostabSensorsScenario, EchoSounderScenario, SUPPORTED_SCENARIOS
 from .log_saver import LogSaver
 from ..const_names import SCENARIO_STATE_TOPIC_NAME, LED_STRIP_SET_MODE_SERVICE
 
 NODE_NAME = "state_controller"
 
 LOG_DIR = "/home/airaflot/ros_logs"
-SUPPORTED_SCENARIOS = [WaterSamplerScenario(), EcostabSensorsScenario()]
 
 
 class StateControllerNode(Node):
     def __init__(self, current_scenario: ScenarioInfo | None = None):
         super().__init__(NODE_NAME)
         self.log_saver = LogSaver(self, LOG_DIR)
-        self.current_scenario: ScenarioInfo = current_scenario if current_scenario else WaterSamplerScenario()
+        self.current_scenario: ScenarioInfo = current_scenario if current_scenario else SUPPORTED_SCENARIOS[0]
         self.scenario_state = -1
         self.prev_scenario_state = -1
         self.scenario_node_states: dict = {}

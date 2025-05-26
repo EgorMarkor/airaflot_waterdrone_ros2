@@ -13,5 +13,8 @@
     <node pkg="airaflot_waterdrone" exec="file_saver" name="file_saver" respawn="true"/>
     <node pkg="airaflot_waterdrone" exec="ecostab_sensors_publisher" name="ecostab_sensors_publisher" respawn="true"/>
     <node pkg="airaflot_waterdrone" exec="ecostab_sensors_scenario" name="ecostab_sensors_scenario" respawn="true"/>
+    <node pkg="airaflot_waterdrone" exec="gps_external" name="gps_external" respawn="true"/>
+    <node pkg="airaflot_waterdrone" exec="echo_sounder_scenario" name="echo_sounder_scenario" respawn="true"/>
+    <node pkg="airaflot_waterdrone" exec="echo_sounder_publisher" name="echo_sounder" respawn="true"/>
 
 </launch>

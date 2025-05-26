@@ -133,7 +133,7 @@ class EcostabSensorsScenario(ScenarioInfo):
                 self._create_parameter_int(DEFAULT_DEPTH_PARAM, 30)
             ],
             "/water_sampler_motor": [
-                self._create_parameter_bool(EMULATE_MOTOR_PARAM, True)
+                self._create_parameter_bool(EMULATE_MOTOR_PARAM, False)
             ],
         }
         super().__init__(name, node_list, parameters)
@@ -153,8 +153,33 @@ class EcostabSensorsScenario(ScenarioInfo):
         request.depth = 0
         self.main_service_info = MainServiceInfo(name=START_MEASURE_SERVICE_NAME, type=WaterSampler, request=request)
 
+class EchoSounderScenario(ScenarioInfo):
+    def __init__(self):
+        name = "Echo Sounder"
+        node_list = [
+            "/echo_sounder",
+            "/gps_external",
+            "/echo_sounder_scenario",
+            "/file_saver"
+        ]
+        parameters = {
+            "/file_saver": [
+                self._create_parameter_str(FILE_SAVER_MODE_PARAM, OPERATING_MODE_PERMANENTLY),
+                self._create_parameter_str(FILE_PREFIX_PARAM, "echo_sounder"),
+            ],
+            "/echo_sounder_scenario": [
+                self._create_parameter_bool(USE_EXTERNAL_GPS_PARAM, True),
+            ]
+        }
+        super().__init__(name, node_list, parameters)
+        self.user_set_parameteres = [
+            self._create_parameter_bool(USE_EXTERNAL_GPS_PARAM, True),
+        ]
+
 class MainServiceInfo:
     def __init__(self, name: str, type, request):
         self.name = name
         self.request = request
         self.type = type
+
+SUPPORTED_SCENARIOS = [EchoSounderScenario(), WaterSamplerScenario(), EcostabSensorsScenario()]

@@ -11,10 +11,8 @@ from ament_index_python.packages import get_package_share_directory
 from werkzeug.serving import make_server
 
 from .log_saver import LogSaver
-from .scenario_info import WaterSamplerScenario, EcostabSensorsScenario, ScenarioInfo
+from .scenario_info import WaterSamplerScenario, EcostabSensorsScenario, ScenarioInfo, SUPPORTED_SCENARIOS
 from ..senders.file_saver.config import STORE_FILES_PATH
-
-SUPPORTED_SCENARIOS: list[ScenarioInfo] = [WaterSamplerScenario(), EcostabSensorsScenario()]
 
 state_mapping = {
             ScenarioStateMsg.WAIT_FOR_COMMAND: "WAIT_FOR_COMMAND",
