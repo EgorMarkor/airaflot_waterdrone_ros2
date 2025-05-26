@@ -4,7 +4,7 @@ from airaflot_msgs.msg import EcostabSensors
 
 from ....const_names import USE_OXXYGEN_RAPAM
 
-OXXYGEN_SLAVE_ID = 10
+OXXYGEN_SLAVE_ID = 2
 
 OXXYGEN_REGISTER = 0
 SATURATION_REGISTER = 2

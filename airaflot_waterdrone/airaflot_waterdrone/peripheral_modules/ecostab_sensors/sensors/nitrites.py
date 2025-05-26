@@ -4,7 +4,7 @@ from airaflot_msgs.msg import EcostabSensors
 
 from ....const_names import USE_NITRITE_RAPAM
 
-NITRITE_SLAVE_ID = 5
+NITRITE_SLAVE_ID = 128
 
 NO2_REGISTER = 0x900A
 NO3_REGISTER = 0x9008

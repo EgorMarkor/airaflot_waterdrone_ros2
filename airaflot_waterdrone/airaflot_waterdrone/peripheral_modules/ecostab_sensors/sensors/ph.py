@@ -4,7 +4,7 @@ from airaflot_msgs.msg import EcostabSensors
 
 from ....const_names import USE_PH_RAPAM
 
-PH_SLAVE_ID = 2
+PH_SLAVE_ID = 1
 
 PH_REGISTER = 0x9008
 TEMPERATURE_REGISTER = 0x9004
