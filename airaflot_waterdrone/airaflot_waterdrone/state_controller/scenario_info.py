@@ -75,7 +75,7 @@ class WaterSamplerScenario(ScenarioInfo):
             "/water_sampler_scenario",
             "/file_saver"
         ]
-        parameters = {
+        parameters: dict[str, list[Parameter]] = {
             "/file_saver": [
                 self._create_parameter_str(FILE_SAVER_MODE_PARAM, OPERATING_MODE_ONE_MEAS_PER_FILE),
                 self._create_parameter_str(FILE_PREFIX_PARAM, "water_sampler"),
@@ -101,7 +101,7 @@ class WaterSamplerScenario(ScenarioInfo):
             self._create_parameter_bool(EMULATE_MOTOR_PARAM, False)
         ]
         request = WaterSampler.Request()
-        request.depth = 0
+        request.depth = parameters["/water_sampler_scenario"][0].value.integer_value
         self.main_service_info = MainServiceInfo(name=RUN_WATER_SAMPLER_SERVICE_NAME, type=WaterSampler, request=request)
 
 class EcostabSensorsScenario(ScenarioInfo):

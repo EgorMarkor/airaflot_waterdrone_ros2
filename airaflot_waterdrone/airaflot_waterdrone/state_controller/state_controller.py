@@ -76,6 +76,7 @@ class StateControllerNode(Node):
     def state_callback(self, data: ScenarioStateMsg) -> None:
         self.scenario_node_states[data.node_name] = data.state
         self.prev_scenario_state = self.scenario_state
+        self.get_logger().info(f"Scenario states: {self.scenario_node_states}")
         if self._all_nodes_active():
             self.scenario_state = min(list(self.scenario_node_states.values()))
         else:

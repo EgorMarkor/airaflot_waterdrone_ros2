@@ -41,7 +41,7 @@ class WaterSamplerReleNode(LifecycleNode):
                 return TransitionCallbackReturn.FAILURE
             self.get_logger().info(f"Found rele port {port}")
             self.modbus_client = ModbusClient.ModbusSerialClient(
-                    WATER_SAMPLER_RELE_PORT, baudrate=9600, bytesize=8, stopbits=1
+                    port, baudrate=9600, bytesize=8, stopbits=1
                 )
         self.service = self.create_service(
             Trigger, TRIGGER_RELE_SERVICE_NAME, self.trigger_rele
@@ -69,9 +69,11 @@ class WaterSamplerReleNode(LifecycleNode):
         self.get_logger().info("Start trigger rele")
         try:
             if not self._emulate:
-                self.modbus_client.write_register(112,1,1)
+                res = self.modbus_client.write_register(112,1,1)
+                self.get_logger().info(f"Open rele: {res}")
                 time.sleep(OPEN_RELE_DELAY)
-                self.modbus_client.write_register(112,0,1)
+                res = self.modbus_client.write_register(112,0,1)
+                self.get_logger().info(f"Close rele: {res}")
             response.success = True
             response.message = "ok"
         except Exception as e:

@@ -90,7 +90,7 @@ class WaterSamplerMotorNode(LifecycleNode):
     def _run_stepper(self, revolutions: float, direction_down: bool) -> None:
         self.get_logger().info(f"Run motor to {revolutions} revolutions {'down' if direction_down else 'up'}")
         if not self._emulate:
-            direction = 1 if direction_down else -1
+            direction = -1 if direction_down else 1
             command = f"{revolutions * direction * 40}\n"
             self.serial.write(command.encode())
             time.sleep(1)
