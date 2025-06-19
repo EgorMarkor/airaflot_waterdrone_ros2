@@ -201,7 +201,7 @@ function loadParameters() {
                     const inputId = `${node}_${param.name}`;
                     html += `<li>${param.name}: `;
                     if (param.editable) {
-                        if (param.type === 3) {
+                        if (param.type === 4) {
                             html += `<input type="text" id="${inputId}" value="${param.value}">`;
                         } else if (param.type === 1) {
                             html += `<input type="checkbox" id="${inputId}" ${param.value ? "checked" : ""}>`;
@@ -267,7 +267,7 @@ function saveParameters() {
                     if (param.editable) {
                         const inputId = `${node}_${param.name}`;
                         let value;
-                        if (param.type === 3) {
+                        if (param.type === 4) {
                             value = document.getElementById(inputId).value;
                         } else if (param.type === 1) {
                             value = document.getElementById(inputId).checked;

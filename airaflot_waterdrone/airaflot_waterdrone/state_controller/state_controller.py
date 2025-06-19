@@ -94,6 +94,7 @@ class StateControllerNode(Node):
     def activate_nodes(self) -> None:
         for node in self.nodes.values():
             if node.full_name in self.current_scenario.parameters:
+                self.get_logger().info(f"Set parameters for {node.full_name}: {self.current_scenario.parameters[node.full_name]}")
                 node.set_parameters(self.current_scenario.parameters[node.full_name])
             self.get_logger().info(f"Configuring {node.full_name}")
             if node.configure():
@@ -146,6 +147,8 @@ class StateControllerNode(Node):
                 node_name = command.split(":", 1)[1]
                 if node_name in self.nodes:
                     self.get_logger().info(f"Configuring {node_name}")
+                    self.get_logger().info(f"Set parameters for {self.nodes[node_name].full_name}: {self.current_scenario.parameters[self.nodes[node_name].full_name]}")
+                    self.nodes[node_name].set_parameters(self.current_scenario.parameters[self.nodes[node_name].full_name])
                     if self.nodes[node_name].configure():
                         self.get_logger().info(f"Activating {node_name}")
                         self.nodes[node_name].activate()

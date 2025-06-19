@@ -35,7 +35,8 @@ setup(
                 'ecostab_sensors_scenario = airaflot_waterdrone.scenarios.ecostab_sensors.data_formatter:main',
                 'state_controller = airaflot_waterdrone.state_controller.state_controller:main',
                 'led_strip = airaflot_waterdrone.peripheral_modules.led_strip.led_strip:main',
-                'echo_sounder_scenario = airaflot_waterdrone.scenarios.echo_sounder.scenario:main'
+                'echo_sounder_scenario = airaflot_waterdrone.scenarios.echo_sounder.scenario:main',
+                'common_sender = airaflot_waterdrone.senders.common_sender:main'
         ],
     },
 )

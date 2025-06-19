@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-MAX_MEASUREMENTS_COUNT = 120
+MAX_MEASUREMENTS_COUNT = 50
 NEW_FILE_TIMEOUT = timedelta(seconds=120)
 STORE_FILES_PATH = "/home/airaflot/measurements"
 

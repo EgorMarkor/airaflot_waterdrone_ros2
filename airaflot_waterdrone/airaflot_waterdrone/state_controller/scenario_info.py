@@ -22,8 +22,13 @@ from ..const_names import (
     USE_CONDUCTIVITY_RAPAM,
     USE_NITRITE_RAPAM,
     USE_ORP_RAPAM,
-    USE_PH_RAPAM
+    USE_PH_RAPAM,
+    SBER_URL_ECHOSOUNDER_PARAM,
+    SBER_URL_SENSORS_PARAM,
+    SBER_URL_WATERSAMPLER_PARAM
 )
+
+from ..senders.sber.config import DEFAUL_URL_ECHOSOUNDER, DEFAUL_URL_SENSORS, DEFAUL_URL_WATERSAMPLER
 
 class ScenarioInfo:
     def __init__(self, name: str, node_list: list[str], parameters: dict[str, list[Parameter]]) -> None:
@@ -73,7 +78,8 @@ class WaterSamplerScenario(ScenarioInfo):
             "/water_sampler_rele",
             "/water_sampler",
             "/water_sampler_scenario",
-            "/file_saver"
+            "/file_saver",
+            "/common_sender"
         ]
         parameters: dict[str, list[Parameter]] = {
             "/file_saver": [
@@ -91,6 +97,12 @@ class WaterSamplerScenario(ScenarioInfo):
             ],
             "/water_sampler_scenario": [
                 self._create_parameter_int(DEFAULT_DEPTH_PARAM, 30)
+            ],
+            "/common_sender": [
+                self._create_parameter_bool("use_sber_sender", True),
+                self._create_parameter_str(SBER_URL_ECHOSOUNDER_PARAM, DEFAUL_URL_ECHOSOUNDER),
+                self._create_parameter_str(SBER_URL_SENSORS_PARAM, DEFAUL_URL_SENSORS),
+                self._create_parameter_str(SBER_URL_WATERSAMPLER_PARAM, DEFAUL_URL_WATERSAMPLER),
             ]
         }
         super().__init__(name, node_list, parameters)
@@ -98,7 +110,11 @@ class WaterSamplerScenario(ScenarioInfo):
             self._create_parameter_int(SAMPLING_DELAY_PARAM, 30),
             self._create_parameter_int(DEFAULT_DEPTH_PARAM, 30),
             self._create_parameter_bool(EMULATE_RELE_PARAM, False),
-            self._create_parameter_bool(EMULATE_MOTOR_PARAM, False)
+            self._create_parameter_bool(EMULATE_MOTOR_PARAM, False),
+            self._create_parameter_bool("use_sber_sender", True),
+            self._create_parameter_str(SBER_URL_ECHOSOUNDER_PARAM, DEFAUL_URL_ECHOSOUNDER),
+            self._create_parameter_str(SBER_URL_SENSORS_PARAM, DEFAUL_URL_SENSORS),
+            self._create_parameter_str(SBER_URL_WATERSAMPLER_PARAM, DEFAUL_URL_WATERSAMPLER),
         ]
         request = WaterSampler.Request()
         request.depth = parameters["/water_sampler_scenario"][0].value.integer_value
@@ -111,7 +127,8 @@ class EcostabSensorsScenario(ScenarioInfo):
             "/water_sampler_motor",
             "/ecostab_sensors_publisher",
             "/ecostab_sensors_scenario",
-            "/file_saver"
+            "/file_saver",
+            "/common_sender"
         ]
         parameters = {
             "/file_saver": [
@@ -135,6 +152,12 @@ class EcostabSensorsScenario(ScenarioInfo):
             "/water_sampler_motor": [
                 self._create_parameter_bool(EMULATE_MOTOR_PARAM, False)
             ],
+            "/common_sender": [
+                self._create_parameter_bool("use_sber_sender", True),
+                self._create_parameter_str(SBER_URL_ECHOSOUNDER_PARAM, DEFAUL_URL_ECHOSOUNDER),
+                self._create_parameter_str(SBER_URL_SENSORS_PARAM, DEFAUL_URL_SENSORS),
+                self._create_parameter_str(SBER_URL_WATERSAMPLER_PARAM, DEFAUL_URL_WATERSAMPLER),
+            ]
         }
         super().__init__(name, node_list, parameters)
         self.user_set_parameteres = [
@@ -148,6 +171,10 @@ class EcostabSensorsScenario(ScenarioInfo):
             self._create_parameter_bool(USE_NITRITE_RAPAM, True),
             self._create_parameter_bool(USE_ORP_RAPAM, True),
             self._create_parameter_bool(USE_OXXYGEN_RAPAM, True),
+            self._create_parameter_bool("use_sber_sender", True),
+            self._create_parameter_str(SBER_URL_ECHOSOUNDER_PARAM, DEFAUL_URL_ECHOSOUNDER),
+            self._create_parameter_str(SBER_URL_SENSORS_PARAM, DEFAUL_URL_SENSORS),
+            self._create_parameter_str(SBER_URL_WATERSAMPLER_PARAM, DEFAUL_URL_WATERSAMPLER),
         ]
         request = WaterSampler.Request()
         request.depth = 0
@@ -160,7 +187,8 @@ class EchoSounderScenario(ScenarioInfo):
             "/echo_sounder",
             "/gps_external",
             "/echo_sounder_scenario",
-            "/file_saver"
+            "/file_saver",
+            "/common_sender"
         ]
         parameters = {
             "/file_saver": [
@@ -169,11 +197,20 @@ class EchoSounderScenario(ScenarioInfo):
             ],
             "/echo_sounder_scenario": [
                 self._create_parameter_bool(USE_EXTERNAL_GPS_PARAM, True),
+            ],
+            "/common_sender": [
+                self._create_parameter_bool("use_sber_sender", True),
+                self._create_parameter_str(SBER_URL_ECHOSOUNDER_PARAM, DEFAUL_URL_ECHOSOUNDER),
+                self._create_parameter_str(SBER_URL_SENSORS_PARAM, DEFAUL_URL_SENSORS),
+                self._create_parameter_str(SBER_URL_WATERSAMPLER_PARAM, DEFAUL_URL_WATERSAMPLER),
             ]
         }
         super().__init__(name, node_list, parameters)
         self.user_set_parameteres = [
-            self._create_parameter_bool(USE_EXTERNAL_GPS_PARAM, True),
+            self._create_parameter_bool("use_sber_sender", True),
+            self._create_parameter_str(SBER_URL_ECHOSOUNDER_PARAM, DEFAUL_URL_ECHOSOUNDER),
+            self._create_parameter_str(SBER_URL_SENSORS_PARAM, DEFAUL_URL_SENSORS),
+            self._create_parameter_str(SBER_URL_WATERSAMPLER_PARAM, DEFAUL_URL_WATERSAMPLER),
         ]
 
 class MainServiceInfo:

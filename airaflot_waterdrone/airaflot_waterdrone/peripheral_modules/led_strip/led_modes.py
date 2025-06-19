@@ -14,9 +14,10 @@ class LedColor:
 
 class LedMode(Enum):
     ERROR = (0, LedColor.RED, LedColor.RED, False)
-    NOT_READY = (1, LedColor.BLACK, LedColor.ORANGE, True)
-    NORMAL = (2, LedColor.WHITE, LedColor.WHITE, False)
-    PROCESS = (3, LedColor.WHITE, LedColor.BLUE, True)
+    NOT_READY = (1, LedColor.ORANGE, LedColor.ORANGE, False)
+    NORMAL = (2, LedColor.BLACK, LedColor.GREEN, True)
+    PROCESS = (3, LedColor.BLACK, LedColor.BLUE, True)
+    NOT_SENT_DATA = (4, LedColor.ORANGE, LedColor.GREEN, True)
 
     def __init__(self, mode_id, main_color, secondary_color, is_blink):
         self.mode_id = mode_id

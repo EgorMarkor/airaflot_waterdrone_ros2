@@ -55,4 +55,6 @@ SCENARIO_STATE_TOPIC_NAME = "/airaflot/scenario_state"
 LED_STRIP_SET_MODE_SERVICE = "/airaflot/set_led_mode"
 
 ### Sber Sender ###
-SBER_URL_PARAM = "sber_url"
+SBER_URL_SENSORS_PARAM = "sber_url_sensors"
+SBER_URL_ECHOSOUNDER_PARAM = "sber_url_echosounder"
+SBER_URL_WATERSAMPLER_PARAM = "sber_url_watersampler"

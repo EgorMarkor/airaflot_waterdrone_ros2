@@ -114,6 +114,7 @@ class WebServer:
                     } for param in params
                 ]
             project_state["parameters"] = data
+            # self.logger_callback(f"Project state: {project_state}")
             return jsonify(project_state)
 
         @self.app.route('/set_parameters', methods=['POST'])
@@ -127,6 +128,7 @@ class WebServer:
 
             for param in raw:
                 p = Parameter()
+                self.logger_callback(f"Set param: {param}")
                 p.name = param["name"]
                 p.value.type = param["type"]
                 if p.value.type == ParameterType.PARAMETER_STRING:
