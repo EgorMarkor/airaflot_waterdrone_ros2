@@ -53,8 +53,8 @@ class SensorsDataFormatter(LifecycleNode):
         self.gps_subscription: tp.Optional[Subscription] = None
         self.rc_listener: tp.Optional[RCListenerHelper] = None
         self.mission_listener: tp.Optional[MissionListener] = None
-        self.down_motor_service_client: tp.Optional[ServiceClientHelper] = None
-        self.up_motor_service_client: tp.Optional[ServiceClientHelper] = None
+        # self.down_motor_service_client: tp.Optional[ServiceClientHelper] = None
+        # self.up_motor_service_client: tp.Optional[ServiceClientHelper] = None
         self.set_loiter_mode_client: tp.Optional[ServiceClientHelper] = None
         self.set_previous_mode_client: tp.Optional[ServiceClientHelper] = None
 
@@ -76,11 +76,11 @@ class SensorsDataFormatter(LifecycleNode):
         self.last_sensors_data: tp.Dict = self._format_sensors_data()
         self.last_gps_data: tp.Dict = self._format_gps_data()
         self.default_depth = DEFAULT_DEPTH
-        self.declare_parameter(DEFAULT_DEPTH_PARAM, DEFAULT_DEPTH)
+        # self.declare_parameter(DEFAULT_DEPTH_PARAM, DEFAULT_DEPTH)
         self.get_logger().info("Ecostab Sensors Scenario is unconfigured")
 
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
-        self.default_depth = self.get_parameter(DEFAULT_DEPTH_PARAM).get_parameter_value().integer_value
+        # self.default_depth = self.get_parameter(DEFAULT_DEPTH_PARAM).get_parameter_value().integer_value
         self.sensors_subscription = self.create_subscription(
             EcostabSensors, ECOSTAB_SENSORS_TOPIC_NAME, self.sensors_listener, 10, callback_group=self.send_data_callback_group
         )
@@ -103,12 +103,12 @@ class SensorsDataFormatter(LifecycleNode):
         self.mission_listener = MissionListener(self, self._start_measure)
         self.publisher = self.create_lifecycle_publisher(DataToSend, DATA_TO_SEND_TOPIC_NAME, 10)
 
-        self.down_motor_service_client = ServiceClientHelper(
-            self, WaterSamplerMotor, DOWN_WATER_SAMPLER_MOTOR_SERVICE_NAME
-        )
-        self.up_motor_service_client = ServiceClientHelper(
-            self, WaterSamplerMotor, UP_WATER_SAMPLER_MOTOR_SERVICE_NAME
-        )
+        # self.down_motor_service_client = ServiceClientHelper(
+        #     self, WaterSamplerMotor, DOWN_WATER_SAMPLER_MOTOR_SERVICE_NAME
+        # )
+        # self.up_motor_service_client = ServiceClientHelper(
+        #     self, WaterSamplerMotor, UP_WATER_SAMPLER_MOTOR_SERVICE_NAME
+        # )
         self.set_loiter_mode_client = ServiceClientHelper(
             self, Trigger, SET_LOITER_MODE_SERVICE_NAME
         )
@@ -153,15 +153,15 @@ class SensorsDataFormatter(LifecycleNode):
             self.set_loiter_mode_client.call_from_callback(Trigger.Request())
             distance = depth
             self.get_logger().info(f"")
-            motor_request = self._create_motor_service_request(distance)
-            self.down_motor_service_client.call_from_callback(motor_request)
+            # motor_request = self._create_motor_service_request(distance)
+            # self.down_motor_service_client.call_from_callback(motor_request)
             # self.is_measure = True
             self.message_position = DataToSend.MESSAGE_POS_START
             self.get_logger().info(f"Wait for delay: {self.measurement_delay}")
             time.sleep(self.measurement_delay)
             # self.is_measure = False
             self.message_position = DataToSend.MESSAGE_POS_LAST
-            self.up_motor_service_client.call_from_callback(motor_request)
+            # self.up_motor_service_client.call_from_callback(motor_request)
             self.get_logger().info("Measurement finished")
         except Exception as e:
             self.get_logger().error(f"Measurement failed with error {e}")
@@ -239,10 +239,10 @@ class SensorsDataFormatter(LifecycleNode):
         data_to_send.sensors_data = json.dumps(self.last_sensors_data)
         return data_to_send
     
-    def _create_motor_service_request(self, distance: int) -> WaterSamplerMotor.Request:
-        request = WaterSamplerMotor.Request()
-        request.distance_cm = distance
-        return request
+    # def _create_motor_service_request(self, distance: int) -> WaterSamplerMotor.Request:
+    #     request = WaterSamplerMotor.Request()
+    #     request.distance_cm = distance
+    #     return request
     
     def _cleanup(self) -> None:
         self.destroy_lifecycle_publisher(self.publisher)
@@ -252,8 +252,8 @@ class SensorsDataFormatter(LifecycleNode):
         self.destroy_timer(self.state_timer)
         self.destroy_lifecycle_publisher(self.state_publisher)
         self.destroy_service(self.start_measure_service)
-        self.down_motor_service_client.destroy()
-        self.up_motor_service_client.destroy()
+        # self.down_motor_service_client.destroy()
+        # self.up_motor_service_client.destroy()
         self.set_loiter_mode_client.destroy()
         self.set_previous_mode_client.destroy()
         self.rc_listener.destroy()

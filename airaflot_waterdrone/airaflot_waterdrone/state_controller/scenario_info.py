@@ -87,16 +87,14 @@ class WaterSamplerScenario(ScenarioInfo):
                 self._create_parameter_str(FILE_PREFIX_PARAM, "water_sampler"),
             ],
             "/water_sampler": [
-                self._create_parameter_int(SAMPLING_DELAY_PARAM, 30)
+                self._create_parameter_int(SAMPLING_DELAY_PARAM, 30),
+                self._create_parameter_int(DEFAULT_DEPTH_PARAM, 30)
             ],
             "/water_sampler_motor": [
                 self._create_parameter_bool(EMULATE_MOTOR_PARAM, False)
             ],
             "/water_sampler_rele": [
                 self._create_parameter_bool(EMULATE_RELE_PARAM, False)
-            ],
-            "/water_sampler_scenario": [
-                self._create_parameter_int(DEFAULT_DEPTH_PARAM, 30)
             ],
             "/common_sender": [
                 self._create_parameter_bool("use_sber_sender", True),
@@ -117,14 +115,14 @@ class WaterSamplerScenario(ScenarioInfo):
             self._create_parameter_str(SBER_URL_WATERSAMPLER_PARAM, DEFAUL_URL_WATERSAMPLER),
         ]
         request = WaterSampler.Request()
-        request.depth = parameters["/water_sampler_scenario"][0].value.integer_value
+        request.depth = 0
         self.main_service_info = MainServiceInfo(name=RUN_WATER_SAMPLER_SERVICE_NAME, type=WaterSampler, request=request)
 
 class EcostabSensorsScenario(ScenarioInfo):
     def __init__(self):
         name = "Ecostab Sensors"
         node_list = [
-            "/water_sampler_motor",
+            # "/water_sampler_motor",
             "/ecostab_sensors_publisher",
             "/ecostab_sensors_scenario",
             "/file_saver",
@@ -147,11 +145,11 @@ class EcostabSensorsScenario(ScenarioInfo):
                 self._create_parameter_bool(USE_EXTERNAL_GPS_PARAM, False),
                 self._create_parameter_int(MEASUREMENT_INTERVAL_PARAM, 5),
                 self._create_parameter_int(MEASUREMENT_DELAY_PARAM, 30),
-                self._create_parameter_int(DEFAULT_DEPTH_PARAM, 30)
+                # self._create_parameter_int(DEFAULT_DEPTH_PARAM, 30)
             ],
-            "/water_sampler_motor": [
-                self._create_parameter_bool(EMULATE_MOTOR_PARAM, False)
-            ],
+            # "/water_sampler_motor": [
+            #     self._create_parameter_bool(EMULATE_MOTOR_PARAM, False)
+            # ],
             "/common_sender": [
                 self._create_parameter_bool("use_sber_sender", True),
                 self._create_parameter_str(SBER_URL_ECHOSOUNDER_PARAM, DEFAUL_URL_ECHOSOUNDER),
@@ -164,8 +162,8 @@ class EcostabSensorsScenario(ScenarioInfo):
             self._create_parameter_bool(EMULATE_SENSORS_PARAM, False),
             self._create_parameter_int(MEASUREMENT_INTERVAL_PARAM, 5),
             self._create_parameter_int(MEASUREMENT_DELAY_PARAM, 30),
-            self._create_parameter_int(DEFAULT_DEPTH_PARAM, 30),
-            self._create_parameter_bool(EMULATE_MOTOR_PARAM, False),
+            # self._create_parameter_int(DEFAULT_DEPTH_PARAM, 30),
+            # self._create_parameter_bool(EMULATE_MOTOR_PARAM, False),
             self._create_parameter_bool(USE_PH_RAPAM, True),
             self._create_parameter_bool(USE_CONDUCTIVITY_RAPAM, True),
             self._create_parameter_bool(USE_NITRITE_RAPAM, True),

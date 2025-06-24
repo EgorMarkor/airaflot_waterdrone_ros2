@@ -17,7 +17,7 @@ from ...const_names import RUN_WATER_SAMPLER_SERVICE_NAME, SCENARIO_STATE_TOPIC_
 
 NODE_NAME = "water_sampler_scenario"
 RC_IN_TOPIC_NAME = "/mavros/rc/in"
-DEFAULT_DEPTH = 30
+DEFAULT_DEPTH = 0
 
 class RCCommandsController(LifecycleNode):
 
@@ -32,11 +32,9 @@ class RCCommandsController(LifecycleNode):
         self._state: int = ScenarioStateMsg.WAIT_FOR_COMMAND
         self._water_sampler_state: int = ScenarioStateMsg.WAIT_FOR_COMMAND
         self.default_depth = DEFAULT_DEPTH
-        self.declare_parameter(DEFAULT_DEPTH_PARAM, DEFAULT_DEPTH)
         self.get_logger().info("Water Sampler Scenario is unconfigured")
 
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
-        self.default_depth = self.get_parameter(DEFAULT_DEPTH_PARAM).get_parameter_value().integer_value
         self.rc_listener = RCListenerHelper(self, self.run_service)
         self.mission_listener = MissionListener(self, self.run_service)
         self.state_subscription = self.create_subscription(ScenarioStateMsg, SCENARIO_STATE_TOPIC_NAME, self.state_callback, 10)

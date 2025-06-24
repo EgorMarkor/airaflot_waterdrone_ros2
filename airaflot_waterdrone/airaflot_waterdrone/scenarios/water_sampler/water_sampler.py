@@ -30,8 +30,11 @@ from ...const_names import (
     DATA_TO_SEND_TOPIC_NAME,
     GPS_EXTERNAL_DATA_TOPIC_NAME,
     USE_EXTERNAL_GPS_PARAM,
-    SAMPLING_DELAY_PARAM
+    SAMPLING_DELAY_PARAM,
+    DEFAULT_DEPTH_PARAM
 )
+
+DEFAULT_DEPTH = 30
 
 NODE_NAME = "water_sampler"
 GPS_INTERNAL_DATA_TOPIC_NAME = "/mavros/global_position/global"
@@ -55,12 +58,15 @@ class WaterSamplerNode(LifecycleNode):
         self._gps_location: dict = {"latitude": 0, "longitude": 0}
         self.declare_parameter(USE_EXTERNAL_GPS_PARAM, False)
         self.declare_parameter(SAMPLING_DELAY_PARAM, 30)
+        self.declare_parameter(DEFAULT_DEPTH_PARAM, DEFAULT_DEPTH)
         self.sampling_delay = 30
+        self.default_depth = DEFAULT_DEPTH
         self._state: int = ScenarioStateMsg.WAIT_FOR_COMMAND
 
         self.get_logger().info("Water sampler is unconfigured")
 
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
+        self.default_depth = self.get_parameter(DEFAULT_DEPTH_PARAM).get_parameter_value().integer_value
         self.trigger_servo_service_client = ServiceClientHelper(
             self, Trigger, TRIGGER_RELE_SERVICE_NAME
         )
@@ -132,12 +138,13 @@ class WaterSamplerNode(LifecycleNode):
             self.state_publisher.publish(msg)
 
     def run_water_sampler(self, request: WaterSampler.Request, response: WaterSampler.Response):
-        self.get_logger().info(f"Run water sampler with depth: {request.depth}")
+        depth = request.depth if request.depth else self.default_depth
+        self.get_logger().info(f"Run water sampler with depth: {depth}")
         self._state = ScenarioStateMsg.WORK
-        self._send_sample_point_info(request.depth)
+        self._send_sample_point_info(depth)
         try:
             self.set_loiter_mode_client.call_from_callback(Trigger.Request())
-            distance = request.depth
+            distance = depth
             motor_request = self._create_motor_service_request(distance)
             self.down_motor_service_client.call_from_callback(motor_request)
             self.get_logger().info(f"Wait for delay: {self.sampling_delay}")
