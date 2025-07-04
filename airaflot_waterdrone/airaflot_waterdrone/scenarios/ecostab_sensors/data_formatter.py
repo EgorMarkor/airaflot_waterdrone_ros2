@@ -224,10 +224,11 @@ class SensorsDataFormatter(LifecycleNode):
     def _format_gps_data(
         self, gps_msg: tp.Union[NavSatFix, NMEAGPGGA] = None
     ) -> tp.Dict:
-        data = {"latitude": 0.0, "longitude": 0.0}
+        data = {"latitude": 0.0, "longitude": 0.0, "altitude": 0.0}
         if gps_msg is not None:
             data["latitude"] = gps_msg.latitude
             data["longitude"] = gps_msg.longitude
+            data["altitude"] = gps_msg.altitude
         return data
 
     def _create_data_to_send_msg(self, message_position: int = DataToSend.MESSAGE_POS_CONTINUE) -> DataToSend:
@@ -235,6 +236,7 @@ class SensorsDataFormatter(LifecycleNode):
         data_to_send.timestamp = time.time()
         data_to_send.longitude = self.last_gps_data["longitude"]
         data_to_send.latitude = self.last_gps_data["latitude"]
+        data_to_send.altitude = self.last_gps_data["altitude"]
         data_to_send.message_position = message_position
         data_to_send.sensors_data = json.dumps(self.last_sensors_data)
         return data_to_send

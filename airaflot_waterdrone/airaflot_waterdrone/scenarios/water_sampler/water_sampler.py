@@ -55,7 +55,7 @@ class WaterSamplerNode(LifecycleNode):
         self.state_publisher: tp.Optional[LifecyclePublisher] = None
         self.sample_point_publisher: tp.Optional[LifecyclePublisher] = None
         self.timer: tp.Optional[Timer] = None
-        self._gps_location: dict = {"latitude": 0, "longitude": 0}
+        self._gps_location: dict = {"latitude": 0, "longitude": 0, "altitude": 0}
         self.declare_parameter(USE_EXTERNAL_GPS_PARAM, False)
         self.declare_parameter(SAMPLING_DELAY_PARAM, 30)
         self.declare_parameter(DEFAULT_DEPTH_PARAM, DEFAULT_DEPTH)
@@ -129,6 +129,7 @@ class WaterSamplerNode(LifecycleNode):
         if msg is not None:
             self._gps_location["latitude"] = msg.latitude
             self._gps_location["longitude"] = msg.longitude
+            self._gps_location["altitude"] = msg.altitude
 
     def timer_callback(self) -> None:
         msg = ScenarioStateMsg()
@@ -169,8 +170,9 @@ class WaterSamplerNode(LifecycleNode):
 
     def _send_sample_point_info(self, depth: int) -> None:
         message = DataToSend()
-        message.latitude = self._gps_location["latitude"]
-        message.longitude = self._gps_location["longitude"]
+        message.latitude = float(self._gps_location["latitude"])
+        message.longitude = float(self._gps_location["longitude"])
+        message.altitude = float(self._gps_location["altitude"])
         message.timestamp = time.time()
         message.sensors_data = json.dumps({"sampling_depth": depth})
         self.get_logger().info(f"Sending sample depth info: {message}")
@@ -192,7 +194,7 @@ class WaterSamplerNode(LifecycleNode):
         self.set_previous_mode_client = None
         self.destroy_subscription(self.gps_subscription)
         self.destroy_lifecycle_publisher(self.sample_point_publisher)
-        self._gps_location: dict = {"latitude": 0, "longitude": 0}
+        self._gps_location: dict = {"latitude": 0, "longitude": 0, "altitude": 0}
 
 
 

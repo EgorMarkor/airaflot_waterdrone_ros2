@@ -5,5 +5,6 @@ uint8 MESSAGE_POS_LAST = 2
 float64 timestamp
 float64 longitude
 float64 latitude
+float64 altitude 0.0
 string sensors_data
 uint8 message_position 1

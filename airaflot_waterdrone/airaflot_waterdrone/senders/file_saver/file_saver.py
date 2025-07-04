@@ -98,7 +98,7 @@ class FileSaver(LifecycleNode):
 
     def _format_data_to_json(self, data: DataToSend) -> tp.Dict:
         json_data = json.loads(data.sensors_data)
-        json_data["gps"] = (data.latitude, data.longitude)
+        json_data["gps"] = (data.latitude, data.longitude, data.altitude)
         json_data["timestamp"] = data.timestamp
         return json_data
     

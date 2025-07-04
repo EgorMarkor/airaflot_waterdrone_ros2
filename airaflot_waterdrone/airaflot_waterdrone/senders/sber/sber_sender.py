@@ -92,7 +92,8 @@ class SberSender(Sender):
             new_meas = {"timestamp": timestamp}
             new_meas["GPS"] = {
                 "latitude": gps[0],
-                "longitude": gps[1]
+                "longitude": gps[1],
+                "altitude": gps[2] if len(gps) > 2 else 0.0
             }
             if "temperature" in meas:
                 new_meas["sensors"] = meas.copy()
