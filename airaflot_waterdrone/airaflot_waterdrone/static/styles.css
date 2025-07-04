@@ -1,0 +1,331 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f5f5;
+    margin: 0;
+    padding: 20px;
+}
+
+h1 { color: #333; }
+
+.container {
+    max-width: 1200px;
+    margin: auto;
+}
+
+.card {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+label {
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+select, input[type="text"], input[type="number"] {
+    padding: 8px;
+    font-size: 16px;
+}
+
+button {
+    padding: 8px 12px;
+    margin: 5px;
+    font-size: 14px;
+    border: none;
+    border-radius: 5px;
+    background-color: #007bff;
+    color: white;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+.node-section { margin-top: 20px; }
+.node-section h3 { margin-bottom: 10px; color: #444; }
+
+ul { list-style-type: none; padding-left: 0; }
+li { margin: 6px 0; }
+
+input[type="checkbox"] {
+    transform: scale(1.3);
+    margin-left: 10px;
+}
+
+.status h3 { margin-top: 10px; }
+
+.state-active   { color: green; font-weight: bold; }
+.state-dead     { color: red; font-weight: bold; }
+.state-unconfigured { color: orange; font-weight: bold; }
+
+.button-group { margin-top: 10px; }
+
+.file-tree ul { list-style-type: none; padding-left: 18px; margin: 0; }
+.file-tree li { margin: 3px 0; line-height: 1.7; font-size: 15px; }
+
+.folder-label {
+    cursor: pointer;
+    font-weight: 500;
+    color: #007bff;
+    user-select: none;
+}
+.folder-label::before { content: "📁"; margin-right: 6px; }
+.folder-label.open::before { content: "📂"; }
+
+.file-label {
+    color: #333;
+    cursor: pointer;
+    font-weight: 400;
+}
+.file-label::before { content: "📄"; margin-right: 6px; }
+.file-label:hover {
+    text-decoration: underline;
+    color: #0056b3;
+}
+
+.show-all-toggle {
+    background-color: #28a745;
+    font-size: 12px;
+    padding: 5px 10px;
+    margin-left: 10px;
+}
+
+.show-all-toggle:hover {
+    background-color: #218838;
+}
+
+.hidden-folder {
+    display: none;
+}
+
+.latest-folder {
+    border-left: 3px solid #28a745;
+    padding-left: 10px;
+    background-color: #f8fff9;
+    margin: 5px 0;
+    border-radius: 3px;
+}
+
+/* File content display */
+.file-content-container {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-top: 15px;
+    display: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.file-content-header {
+    background: #343a40;
+    color: white;
+    padding: 10px 15px;
+    font-weight: 500;
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.file-content-header .close-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.file-content-header .close-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.file-content-body {
+    max-height: 600px;
+    overflow: auto;
+    padding: 0;
+}
+
+.log-content {
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.4;
+    padding: 15px;
+    background: #1e1e1e;
+    color: #d4d4d4;
+    margin: 0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.json-content {
+    padding: 15px;
+    background: white;
+}
+
+.json-content pre {
+    margin: 0;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+/* Log level styling */
+.log-error { color: #ff6b6b; }
+.log-warning { color: #ffd93d; }
+.log-info { color: #6bcf7f; }
+.log-debug { color: #74c0fc; }
+.log-timestamp { color: #868e96; }
+
+/* Settings icon */
+.settings-icon {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.settings-icon:hover {
+    background: #0056b3;
+    transform: rotate(90deg);
+}
+
+/* Modal styles */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-header {
+    background: #343a40;
+    color: white;
+    padding: 10px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 20px;
+}
+
+.modal-close-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-close-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+.modal-footer {
+    padding: 10px 15px;
+    border-top: 1px solid #dee2e6;
+    text-align: right;
+}
+
+/* Inline parameter editing */
+.inline-parameter {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: 20px;
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
+}
+
+.inline-parameter label {
+    font-weight: 500;
+    color: #495057;
+    margin: 0;
+    font-size: 14px;
+}
+
+.inline-parameter input {
+    padding: 4px 8px;
+    font-size: 14px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    width: 80px;
+}
+
+.inline-parameter button {
+    padding: 4px 8px;
+    font-size: 12px;
+    margin: 0;
+}
+
+/* Style for date input to match other inputs */
+input[type="date"] {
+    padding: 8px;
+    font-size: 16px;
+    border: 1px solid #ced4da;
+    border-radius: 5px;
+    margin-right: 10px;
+}

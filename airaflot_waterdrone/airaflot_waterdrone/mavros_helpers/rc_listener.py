@@ -38,7 +38,7 @@ class RCListenerHelper:
                     depth = self._get_depth(msg.channels[WATER_SAMPLER_CHANNEL_INDEX])
                 else:
                     depth = 0
-                self.command_callback(depth)
+                self.command_callback(0)
 
     def _get_depth(self, channel_value: int) -> tp.Optional[int]:
         if abs(channel_value - TASK_1_CHANNEL) < 40:

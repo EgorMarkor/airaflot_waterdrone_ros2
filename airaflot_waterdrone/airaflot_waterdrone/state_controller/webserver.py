@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import shutil
 from contextlib import contextmanager
+from datetime import datetime
 
 from airaflot_msgs.msg import ScenarioStateMsg
 from rcl_interfaces.msg import Parameter, ParameterType
@@ -43,7 +44,7 @@ class WebServer:
         self.current_scenario = None
         
         # Flask app setup
-        self.app = Flask(__name__, template_folder=self._get_templates_path())
+        self.app = Flask(__name__, template_folder=self._get_templates_path(), static_folder=self._get_static_path())
         self.app_server = None
         self._server_running = False
         
@@ -213,6 +214,7 @@ class WebServer:
                         continue
 
                 scenario.set_parameters_from_user(updated_params)
+                self.command_queue.put(f"set_parameters")
                 return "Parameters updated"
                 
             except Exception as e:
@@ -279,6 +281,59 @@ class WebServer:
             except Exception as e:
                 self.logger_callback(f"Error deleting path: {e}")
                 return Response(f"Error deleting: {str(e)}", status=500)
+
+
+        @self.app.route("/delete_folders_by_date", methods=["POST"])
+        def delete_folders_by_date():
+            try:
+                date_str = request.form.get("date")
+                folder_type = request.form.get("type")
+                
+                if not date_str or not folder_type:
+                    return Response("Missing date or type", status=400)
+                
+                # Validate date format (YYYY-MM-DD)
+                try:
+                    selected_date = datetime.strptime(date_str, "%Y-%m-%d")
+                    current_date = datetime.now().date()
+                    if selected_date.date() >= current_date:
+                        return Response("Cannot delete folders for today or future dates", status=400)
+                except ValueError:
+                    return Response("Invalid date format", status=400)
+                
+                # Determine directory based on type
+                if folder_type == "log":
+                    base_dir = self.log_saver.parent_log_dir
+                elif folder_type == "meas":
+                    base_dir = Path(STORE_FILES_PATH)
+                else:
+                    return Response("Invalid folder type", status=400)
+                
+                # Security check
+                allowed_paths = [str(self.log_saver.parent_log_dir), STORE_FILES_PATH]
+                if str(base_dir) not in allowed_paths:
+                    return Response("Invalid directory path", status=403)
+                
+                # Find and delete folders matching the date prefix
+                deleted = False
+                for item in base_dir.iterdir():
+                    if item.is_dir() and item.name.startswith(date_str):
+                        try:
+                            shutil.rmtree(item)
+                            self.logger_callback(f"Deleted folder: {item}")
+                            deleted = True
+                        except Exception as e:
+                            self.logger_callback(f"Error deleting folder {item}: {e}")
+                            continue
+                
+                if not deleted:
+                    return Response("No folders found for the selected date", status=404)
+                
+                return Response("Folders deleted successfully", status=200)
+                
+            except Exception as e:
+                self.logger_callback(f"Error deleting folders by date: {e}")
+                return Response(f"Error: {str(e)}", status=500)
 
     def _extract_parameter_value(self, param_value):
         """Extract parameter value based on type"""
@@ -370,6 +425,18 @@ class WebServer:
             self.logger_callback(f"Error getting templates path: {e}")
             # Fallback to a default path
             return os.path.join(os.getcwd(), "templates")
+
+    def _get_static_path(self) -> str:
+        """Get templates path with error handling"""
+        try:
+            pkg_name = 'airaflot_waterdrone'
+            package_path = get_package_share_directory(pkg_name)
+            workspace_root = os.path.abspath(os.path.join(package_path, '../../../..'))
+            return os.path.join(workspace_root, 'src', pkg_name, pkg_name, "static")
+        except Exception as e:
+            self.logger_callback(f"Error getting templates path: {e}")
+            # Fallback to a default path
+            return os.path.join(os.getcwd(), "static")
     
     def _read_file(self, filepath: Path) -> Response:
         """Read file with security and error handling"""

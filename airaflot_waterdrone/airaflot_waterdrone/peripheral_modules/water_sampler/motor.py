@@ -92,8 +92,9 @@ class WaterSamplerMotorNode(LifecycleNode):
         if not self._emulate:
             direction = -1 if direction_down else 1
             command = f"{revolutions * direction * 40}\n"
+            self.get_logger().info(f"Sending command: {command}")
             self.serial.write(command.encode())
-            time.sleep(1)
+            time.sleep(0.5)
             res = self.serial.readline().decode().strip()
             while res != "DONE":
                 self.get_logger().info(res)
@@ -101,7 +102,12 @@ class WaterSamplerMotorNode(LifecycleNode):
         self.get_logger().info("Motor finished")
 
     def _get_revolutions(self, distance_cm: int) -> int:
-        return distance_cm / 18
+        if distance_cm < 50:
+            return distance_cm / 12
+        elif 50 <= distance_cm < 250:
+            return distance_cm / 11.5
+        else:
+            return distance_cm / 11.1
 
     def _find_port(self) -> tp.Optional[str]:
         ports = serial.tools.list_ports.comports()

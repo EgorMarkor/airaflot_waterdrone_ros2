@@ -257,6 +257,9 @@ class StateControllerNode(Node):
                 self._deactivate_single_node(command.split(":", 1)[1])
             elif command.startswith("run_main_service"):
                 self._run_main_service()
+            elif command.startswith("set_parameters"):
+                for node in self.current_scenario.node_list:
+                    self.nodes[node].set_parameters(self.current_scenario.parameters[node])
         except Exception as e:
             self.get_logger().error(f"Error processing command '{command}': {e}")
 

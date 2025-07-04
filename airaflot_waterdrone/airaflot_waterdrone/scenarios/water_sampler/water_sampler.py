@@ -138,6 +138,7 @@ class WaterSamplerNode(LifecycleNode):
             self.state_publisher.publish(msg)
 
     def run_water_sampler(self, request: WaterSampler.Request, response: WaterSampler.Response):
+        self.default_depth = self.get_parameter(DEFAULT_DEPTH_PARAM).get_parameter_value().integer_value
         depth = request.depth if request.depth else self.default_depth
         self.get_logger().info(f"Run water sampler with depth: {depth}")
         self._state = ScenarioStateMsg.WORK
