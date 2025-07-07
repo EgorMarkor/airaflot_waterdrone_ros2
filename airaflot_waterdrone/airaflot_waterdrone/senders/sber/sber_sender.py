@@ -84,7 +84,7 @@ class SberSender(Sender):
             return False
 
     def _format_data(self, data: dict) -> dict:
-        formatted_data = {"boat_id": "12345", "measurements": []}
+        formatted_data = {"boat_id": self._get_mac_address(), "measurements": []}
         i = 0
         for meas in data["measurements"]:
             gps = meas.pop("gps")
@@ -102,3 +102,10 @@ class SberSender(Sender):
             formatted_data["measurements"].append(new_meas)
             i += 1
         return formatted_data
+    
+    def _get_mac_address(self, interface='eth0'):
+        try:
+            with open(f'/sys/class/net/{interface}/address') as f:
+                return f.read().strip().replace(":", "")
+        except FileNotFoundError:
+            return "12345"

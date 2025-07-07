@@ -17,7 +17,7 @@ from airaflot_waterdrone.mavros_helpers.service_client import ServiceClientHelpe
 
 from .node_info import NodeInfo
 from .webserver import WebServer
-from .scenario_info import ScenarioInfo, WaterSamplerScenario, EcostabSensorsScenario, EchoSounderScenario, SUPPORTED_SCENARIOS
+from .scenario_info import ScenarioInfo, WaterSamplerScenario, EcostabSensorsScenario, EchoSounderScenario, get_supported_scenarios
 from .log_saver import LogSaver
 from ..const_names import SCENARIO_STATE_TOPIC_NAME, LED_STRIP_SET_MODE_SERVICE
 
@@ -31,7 +31,7 @@ class StateControllerNode(Node):
         
         # Initialize core components
         self.log_saver = LogSaver(self, LOG_DIR)
-        self.current_scenario: ScenarioInfo = current_scenario if current_scenario else SUPPORTED_SCENARIOS[0]
+        self.current_scenario: ScenarioInfo = current_scenario if current_scenario else get_supported_scenarios()[0]
         
         # State management with thread-safe access
         self._state_lock = threading.RLock()  # Reentrant lock for nested access
@@ -107,7 +107,7 @@ class StateControllerNode(Node):
     def set_scenario(self, scenario_name: str) -> None:
         """Thread-safe scenario switching"""
         with self._state_context():
-            for scenario in SUPPORTED_SCENARIOS:
+            for scenario in get_supported_scenarios():
                 if scenario.name == scenario_name:
                     self.current_scenario = scenario
                     break

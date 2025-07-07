@@ -72,6 +72,7 @@ class CommonSender(LifecycleNode):
             if not_sent_path.exists():
                 if any(not_sent_path.iterdir()):
                     for filepath in not_sent_path.iterdir():
+                        rclpy.spin_once()
                         if self._file_created_long_ago(filepath):
                             if self._send_data_from_file(filepath):
                                 self._move_to_sent(filepath)
@@ -88,8 +89,18 @@ class CommonSender(LifecycleNode):
         if len(self.active_senders) == 0:
             self.logger.info("No senders configured")
             return False
-        with open(filepath, "r") as f:
-            sensors_data = json.load(f)
+        try:
+            with open(filepath, "r") as f:
+                sensors_data = json.load(f)
+        except Exception as e:
+            self.logger.error(f"Error in reading data from {filepath}: {e}")
+            if filepath.exists() and len(filepath.read_text()) == 0:
+                try:
+                    filepath.unlink()
+                    self.logger.error(f"Empty file {filepath} was removed")
+                except Exception as e:
+                    self.logger.error(f"Error in removing file {filepath}: {e}")
+            return True
         for sender in self.active_senders:
             if not sender.send(sensors_data):
                 self.logger.error(f"Error in sending data from {sender.name}")
@@ -113,11 +124,11 @@ class CommonSender(LifecycleNode):
 
     def _file_created_long_ago(self, filepath: Path) -> bool:
         splitted = filepath.stem.split("_")
-        now_time = datetime.now()
+        splitted_date = filepath.parent.parent.stem.split("-")
         file_time = datetime(
-            year=now_time.year, 
-            month=now_time.month, 
-            day=now_time.day, 
+            year=int(splitted_date[0]), 
+            month=int(splitted_date[1]), 
+            day=int(splitted_date[2]), 
             hour=int(splitted[-3]), 
             minute=int(splitted[-2]), 
             second=int(splitted[-1])

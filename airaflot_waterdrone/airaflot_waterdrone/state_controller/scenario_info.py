@@ -1,6 +1,7 @@
 from rcl_interfaces.msg import Parameter, ParameterType
 from airaflot_msgs.srv import WaterSampler
 import typing as tp
+import json
 
 from ..const_names import (
     OPERATING_MODE_ONE_MEAS_PER_FILE,
@@ -217,4 +218,23 @@ class MainServiceInfo:
         self.request = request
         self.type = type
 
-SUPPORTED_SCENARIOS = [EchoSounderScenario(), WaterSamplerScenario(), EcostabSensorsScenario()]
+SUPPORTED_SCENARIOS: list[ScenarioInfo] = [
+    # EchoSounderScenario(), 
+    # WaterSamplerScenario(), 
+    # EcostabSensorsScenario(),
+]
+
+def get_supported_scenarios() -> list[ScenarioInfo]:
+    if len(SUPPORTED_SCENARIOS) == 0:
+        try:
+            with open("/home/airaflot/waterdrone_config.json", "r") as f:
+                config = json.load(f)
+        except Exception as e:
+            config = {"used_scenarios": ["EchoSounderScenario", "WaterSamplerScenario", "EcostabSensorsScenario"]}
+        if "EchoSounderScenario" in config["used_scenarios"]:
+            SUPPORTED_SCENARIOS.append(EchoSounderScenario())
+        if "WaterSamplerScenario" in config["used_scenarios"]:
+            SUPPORTED_SCENARIOS.append(WaterSamplerScenario())
+        if "EcostabSensorsScenario" in config["used_scenarios"]:
+            SUPPORTED_SCENARIOS.append(EcostabSensorsScenario())
+    return SUPPORTED_SCENARIOS

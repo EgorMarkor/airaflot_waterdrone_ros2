@@ -14,7 +14,7 @@ from ament_index_python.packages import get_package_share_directory
 from werkzeug.serving import make_server
 
 from .log_saver import LogSaver
-from .scenario_info import WaterSamplerScenario, EcostabSensorsScenario, ScenarioInfo, SUPPORTED_SCENARIOS
+from .scenario_info import WaterSamplerScenario, EcostabSensorsScenario, ScenarioInfo, get_supported_scenarios
 from ..senders.file_saver.config import STORE_FILES_PATH
 
 state_mapping = {
@@ -39,7 +39,7 @@ class WebServer:
         self._state_lock = threading.RLock()
         self.nodes_states: dict[str, str] = {}
         self.scenario_state = "NOT_READY"
-        self.scenario_names = [scenario.name for scenario in SUPPORTED_SCENARIOS]
+        self.scenario_names = [scenario.name for scenario in get_supported_scenarios()]
         self.current_scenario_name = None
         self.current_scenario = None
         
@@ -68,7 +68,7 @@ class WebServer:
             try:
                 with self._state_context():
                     return render_template("index.html", 
-                                         scenario_list=SUPPORTED_SCENARIOS, 
+                                         scenario_list=get_supported_scenarios(), 
                                          current_scenario=self.current_scenario)
             except Exception as e:
                 self.logger_callback(f"Error rendering index: {e}")
@@ -135,7 +135,7 @@ class WebServer:
                     
                 with self._state_context():
                     self.current_scenario_name = scenario_name
-                    for scenario in SUPPORTED_SCENARIOS:
+                    for scenario in get_supported_scenarios():
                         if scenario.name == scenario_name:
                             self.current_scenario = scenario
                             break
