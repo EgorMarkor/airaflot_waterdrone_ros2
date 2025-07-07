@@ -207,16 +207,16 @@ class SensorsDataFormatter(LifecycleNode):
     def _format_sensors_data(
         self, sensors_msg: tp.Optional[EcostabSensors] = None
     ) -> tp.Dict:
-        data = {"temperature": 0.0, "ph": 0.0, "conductivity": 0.0, "orp": 0.0, "oxxygen": 0.0, "oxxygen_saturation": 0.0, "salinity": 0.0, "salinity_tds": 0.0, "no2": 0.0, "no3": 0.0}
+        data = {"temperature": 0.0, "pH": 0.0, "conductivity": 0.0, "ORP": 0.0, "oxxygen": 0.0, "oxxygen_saturation": 0.0, "salinity": 0.0, "salinity_TDS": 0.0, "no2": 0.0, "no3": 0.0}
         if sensors_msg is not None:
             data["temperature"] = sensors_msg.temperature
             data["conductivity"] = sensors_msg.conductivity
-            data["orp"] = sensors_msg.orp
-            data["ph"] = sensors_msg.ph
+            data["ORP"] = sensors_msg.orp
+            data["pH"] = sensors_msg.ph
             data["oxxygen"] = sensors_msg.oxxygen
             data["oxxygen_saturation"] = sensors_msg.oxxygen_saturation
             data["salinity"] = sensors_msg.salinity
-            data["salinity_tds"] = sensors_msg.salinity_tds
+            data["salinity_TDS"] = sensors_msg.salinity_tds
             data["no2"] = sensors_msg.no2
             data["no3"] = sensors_msg.no3
         return data
