@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, time
 from std_msgs.msg import String
 
 from rclpy.lifecycle import LifecycleNode, LifecycleState, TransitionCallbackReturn
+from rclpy.callback_groups import ReentrantCallbackGroup, MutuallyExclusiveCallbackGroup
 
 from ..const_names import FILE_FINISHED_TOPIC_NAME
 from .file_saver.config import STORE_FILES_PATH
@@ -27,6 +28,7 @@ class CommonSender(LifecycleNode):
         self.logger = self.get_logger()
         self.available_senders: list[Sender] = [sender(self.logger) for sender in AVAILABLE_SENDERS]
         self.file_finished_subscription: Subscription | None = None
+        self.timer_callback = MutuallyExclusiveCallbackGroup()
         self.timer: Timer | None = None
         self.sber_url: str = ""
         self.active_senders: list[Sender] = []
@@ -55,7 +57,7 @@ class CommonSender(LifecycleNode):
         self.file_finished_subscription = self.create_subscription(
             String, FILE_FINISHED_TOPIC_NAME, self._file_finished_callback, 10
         )
-        self.timer = self.create_timer(10, self._check_unsent_files)
+        self.timer = self.create_timer(10, self._check_unsent_files, callback_group=self.timer_callback)
         self.logger.info("Common Sender is configured")
         return TransitionCallbackReturn.SUCCESS
 
@@ -68,20 +70,21 @@ class CommonSender(LifecycleNode):
         files_sent = 0
         unsent_files = 0
         for item in self._base_path.iterdir():
-            not_sent_path = item / NOT_SENT_DIRNAME
-            if not_sent_path.exists():
-                if any(not_sent_path.iterdir()):
-                    for filepath in not_sent_path.iterdir():
-                        rclpy.spin_once()
-                        if self._file_created_long_ago(filepath):
-                            if self._send_data_from_file(filepath):
-                                self._move_to_sent(filepath)
-                                files_sent += 1
+            if item.stem != "latest":
+                not_sent_path = item / NOT_SENT_DIRNAME
+                if not_sent_path.exists():
+                    if any(not_sent_path.iterdir()):
+                        for filepath in not_sent_path.iterdir():
+                            rclpy.spin_once(self, timeout_sec=0)
+                            if self._file_created_long_ago(filepath):
+                                if self._send_data_from_file(filepath):
+                                    self._move_to_sent(filepath)
+                                    files_sent += 1
+                                else:
+                                    unsent_files += 1
                             else:
+                                self.logger.info(f"file {filepath} was created recently, not sent")
                                 unsent_files += 1
-                        else:
-                            self.logger.info(f"file {filepath} was created recently, not sent")
-                            unsent_files += 1
         self.logger.info(f"Finished check unsent files, sent now: {files_sent}, unsent: {unsent_files}")
 
     def _send_data_from_file(self, filepath: Path | str) -> bool:
@@ -111,7 +114,8 @@ class CommonSender(LifecycleNode):
     def _move_to_sent(self, filepath: Path | str) -> None:
         source = Path(filepath)
         if not source.exists():
-            raise FileNotFoundError(f"Source file not found: {source}")
+            self.logger.info(f"Source file not found: {source}")
+            return
         try:
             parts = list(source.parts)
             idx = parts.index(NOT_SENT_DIRNAME)

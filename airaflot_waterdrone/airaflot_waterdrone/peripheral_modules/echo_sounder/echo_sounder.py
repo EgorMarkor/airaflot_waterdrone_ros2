@@ -77,9 +77,9 @@ class EchoSounder(LifecycleNode):
     def _parse_nmea_string(self, nmea_string: str) -> NMEADBT:
         nmea_string = nmea_string.split(",")
         nmea_message = NMEADBT()
-        nmea_message.foots = float(nmea_string[1])
-        nmea_message.meters = float(nmea_string[3])
-        nmea_message.fatoms = float(nmea_string[5])
+        nmea_message.foots = float(nmea_string[1]) if nmea_string[1] else 0.0
+        nmea_message.meters = float(nmea_string[3]) if nmea_string[3] else 0.0
+        nmea_message.fatoms = float(nmea_string[5]) if nmea_string[5] else 0.0
         return nmea_message
 
     def _send_start_command(self) -> None:
