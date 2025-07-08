@@ -32,11 +32,20 @@ void loop() {
 
             totalSteps = abs(totalSteps); // Ensure positive step count
             
+            // while (totalSteps > 0) {
+            //     int16_t stepsToMove = (totalSteps > stepChunk) ? stepChunk : totalSteps;
+            //     Serial.println(stepsToMove * direction);
+            //     myStepper.step(stepsToMove * direction);
+            //     totalSteps -= stepsToMove;
+            // }
             while (totalSteps > 0) {
-                int16_t stepsToMove = (totalSteps > stepChunk) ? stepChunk : totalSteps;
-                Serial.println(stepsToMove * direction);
-                myStepper.step(stepsToMove * direction);
-                totalSteps -= stepsToMove;
+                // Serial.println(stepsToMove * direction);
+                if (direction > 0) {
+                    myStepper.step(1); 
+                } else {
+                    myStepper.step(-1);
+                }
+                totalSteps -= 1;
             }
 
             Serial.println("DONE");
