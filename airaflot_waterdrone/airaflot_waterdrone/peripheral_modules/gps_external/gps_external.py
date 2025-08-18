@@ -37,7 +37,7 @@ class GPSExternalNode(LifecycleNode):
             if port is None:
                 return TransitionCallbackReturn.FAILURE
 
-            self.serial : serial.Serial | None = serial.Serial(port, 115200)
+            self.serial : serial.Serial | None = serial.Serial(port, 115200, timeout=0.1)
             self.publisher = self.create_lifecycle_publisher(
                 NMEAGPGGA, GPS_EXTERNAL_DATA_TOPIC_NAME, 10
             )
@@ -108,7 +108,7 @@ class GPSExternalNode(LifecycleNode):
         self.logger.info(f"Available ports: {port_names}")
         for port in port_names:
             self.logger.info(f"Check port: {port}")
-            ser = serial.Serial(port, 115200)
+            ser = serial.Serial(port, 115200, timeout=0.1)
             time.sleep(0.5)
             ser.write("log com1 gpgga once\r\n".encode("ascii"))
             time.sleep(0.5)

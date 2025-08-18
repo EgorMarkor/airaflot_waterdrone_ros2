@@ -75,7 +75,7 @@ class CommonSender(LifecycleNode):
                 if not_sent_path.exists():
                     if any(not_sent_path.iterdir()):
                         for filepath in not_sent_path.iterdir():
-                            rclpy.spin_once(self, timeout_sec=0)
+                            rclpy.spin_once(self, timeout_sec=0.05)
                             if self._file_created_long_ago(filepath):
                                 if self._send_data_from_file(filepath):
                                     self._move_to_sent(filepath)

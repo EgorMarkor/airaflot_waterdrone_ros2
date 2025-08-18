@@ -39,7 +39,7 @@ class EchoSounder(LifecycleNode):
             if port is None:
                 return TransitionCallbackReturn.FAILURE
 
-            self.serial : serial.Serial | None = serial.Serial(port, 115200)
+            self.serial : serial.Serial | None = serial.Serial(port, 115200, timeout=0.1)
             self.publisher = self.create_lifecycle_publisher(
                 NMEADBT, ECHOSOUNDER_DATA_TOPIC, 10
             )
@@ -97,7 +97,7 @@ class EchoSounder(LifecycleNode):
         self.logger.info(f"Available ports: {port_names}")
         for port in port_names:
             self.logger.info(f"Check port: {port}")
-            ser = serial.Serial(port, 115200)
+            ser = serial.Serial(port, 115200, timeout=0.1)
             time.sleep(0.5)
             ser.write(INFO_COMMAND)
             time.sleep(0.5)
