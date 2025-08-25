@@ -1,15 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
+        {% load static %}
         <meta charset="UTF-8">
         <title>Scenario Selector</title>
-    
+
         <!-- Highlight.js styles & script -->
         <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
         <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-    
+
         <!-- Custom styles -->
-        <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+        <link rel="stylesheet" href="{% static 'styles.css' %}">
     </head>
 <body>
 <div class="container">
@@ -81,7 +82,7 @@
         </h2>
         <div class="button-group">
             <label for="log-delete-date">Delete Folders by Date:</label>
-            <input type="date" id="log-delete-date">
+            <input type="date" id="log-delete-date" max="{{ current_date }}">
             <button onclick="deleteLogFoldersByDate()">Delete</button>
         </div>
         <div id="log-files">Loading...</div>
@@ -102,7 +103,7 @@
         </h2>
         <div class="button-group">
             <label for="meas-delete-date">Delete Folders by Date:</label>
-            <input type="date" id="meas-delete-date" max=>
+            <input type="date" id="meas-delete-date" max="{{ current_date }}">
             <button onclick="deleteMeasFoldersByDate()">Delete</button>
         </div>
         <div id="meas-files">Loading...</div>
@@ -116,6 +117,6 @@
         </div>
     </div>
 </div>
-<script src="{{ url_for('static', filename='script.js') }}"></script>
+<script src="{% static 'script.js' %}"></script>
 </body>
 </html>
