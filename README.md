@@ -28,10 +28,13 @@ Get data from Ecostab sensors
 * `/airaflot/ecostab_sensors/data` (airaflot_msgs/msg/EcostabSensors) - Data from sensors
 
 ### 3) gps_external
-Get data from external GPS
+Republish coordinates from Pixhawk autopilot
+
+**Subscriptions**:
+* `/mavros/global_position/global` (sensor_msgs/msg/NavSatFix) - GPS data from Pixhawk
 
 **Publishers**:
-* `/airaflot/gps_external/data` (airaflot_msgs/msg/NMEAGPGGA) - Data from external GPS
+* `/airaflot/gps_external/data` (airaflot_msgs/msg/NMEAGPGGA) - Pixhawk GPS data
 
 ### 4) led_strip
 Control Led Strip
